@@ -1,0 +1,238 @@
+/* ============================================================================
+   Services — the altitude ledger
+   ----------------------------------------------------------------------------
+   Not three icon cards. Four full-width rows separated by hairlines, read like
+   a table of contents: number, name, description, duration. The cloud painting
+   behind them is pale enough to carry dark ink with no panel over it, which is
+   why this section is the only one on the site set in the dark ink.
+
+   The rows arrive one at a time while the section is pinned. That timing comes
+   from --section-progress, published by lib/useSectionProgress.ts.
+   ========================================================================== */
+
+.services {
+  position: relative;
+  z-index: var(--z-content);
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: calc(var(--nav-h) + var(--sp-7)) var(--gutter) var(--sp-8);
+  color: var(--ink-dark);
+}
+
+/* ── The camera ───────────────────────────────────────────────────────────
+   The section is pinned at top:top, so anything taller than the viewport hangs
+   below the fold with no way to scroll to it — which is how the fourth row came
+   to reveal itself off screen. So the whole column rides upward as the rows
+   arrive, and the pin reads as a camera panning down with them rather than as a
+   fixed frame.
+
+   --services-pan is the distance to travel, measured and published by Stage.tsx
+   from the actual overflow. It is absent (and this transform therefore zero)
+   whenever the pin is not running: on narrow screens, and under reduced motion.
+
+   The window 0.07 → 0.275 is row 2's threshold through row 4's reveal
+   completing (0.21 + 1/16, the fade rate in .row below), so the travel is spent
+   exactly as the rows land. Row one gets the first beat to itself. */
+.track {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-7);
+  transform: translate3d(
+    0,
+    calc(
+      var(--services-pan, 0px) * -1 *
+        clamp(0, (var(--section-progress, 0) - 0.07) / 0.205, 1)
+    ),
+    0
+  );
+  will-change: transform;
+}
+
+
+/* One left-aligned column. The top right of this section is deliberately left
+   empty: it is where the balloon crests before settling into the clouds. */
+.head {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: var(--sp-3);
+  width: min(100%, var(--measure-max));
+  margin-inline: auto;
+}
+
+.eyebrow {
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--ls-micro);
+  text-transform: uppercase;
+  color: var(--c-deep-teal);
+}
+
+.heading {
+  font-family: var(--ff-display);
+  font-size: var(--fs-h2);
+  font-weight: 400;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--ls-heading);
+}
+
+.intro {
+  max-width: 34rem;
+  margin-top: var(--sp-2);
+  color: var(--ink-dark-dim);
+  font-size: var(--fs-small);
+}
+
+/* ── The ledger ───────────────────────────────────────────────────────────── */
+.ledger {
+  position: relative;
+  width: min(100%, var(--measure-max));
+  margin-inline: auto;
+  border-top: var(--hairline) solid var(--rule-dark);
+}
+
+/* The spine. The whole positioning claim is that these are sequential rather
+   than a menu — "each one is worth less without the one above it" — and until
+   this line existed the page only ever said so in a sentence. The numbers hang
+   off it like altitude marks, which is the same language the About section
+   uses. Faded at both ends so it reads as a climb continuing past the frame
+   rather than as a bounded rule. */
+.ledger::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgb(var(--rgb-deep-teal) / 0.32) 9%,
+    rgb(var(--rgb-deep-teal) / 0.32) 74%,
+    transparent 97%
+  );
+}
+
+.row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr) minmax(0, 1.15fr) auto;
+  align-items: start;
+  gap: var(--sp-5);
+  padding-block: clamp(var(--sp-4), 1.6vh, var(--sp-6));
+  border-bottom: var(--hairline) solid var(--rule-dark);
+
+  /* Each row waits for the pin to carry the visitor past its own threshold.
+     --row-at is set per row in Services.tsx. */
+  opacity: clamp(0, (var(--section-progress, 1) - var(--row-at)) * 16, 1);
+  transform: translateY(
+    calc((1 - clamp(0, (var(--section-progress, 1) - var(--row-at)) * 16, 1)) * 14px)
+  );
+  transition: opacity 120ms linear, transform 120ms linear;
+}
+
+.rowNumber {
+  font-family: var(--ff-display);
+  font-size: var(--fs-small);
+  letter-spacing: 0.2em;
+  color: var(--c-deep-teal);
+  padding-top: 0.35em;
+}
+
+.rowName {
+  font-family: var(--ff-display);
+  font-size: var(--fs-h3);
+  font-weight: 400;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--ls-heading);
+}
+
+.rowSummary {
+  margin-top: var(--sp-2);
+  font-family: var(--ff-accent);
+  font-style: italic;
+  font-size: var(--fs-body);
+  color: var(--c-deep-teal);
+}
+
+.rowBody {
+  color: var(--ink-dark-dim);
+  font-size: var(--fs-small);
+  max-width: 34rem;
+}
+
+.rowMeta {
+  justify-self: end;
+  white-space: nowrap;
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--ls-micro);
+  text-transform: uppercase;
+  color: var(--ink-dark-dim);
+  padding-top: 0.5em;
+}
+
+/* Hover marks the row without moving the page: the number goes darker and a
+   hairline draws itself along the row's bottom edge. */
+.row::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 100%;
+  height: 1px;
+  background: var(--c-deep-teal);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 420ms var(--ease-out);
+}
+
+.row:hover::after {
+  transform: scaleX(1);
+}
+
+.row:hover .rowNumber {
+  color: var(--c-earth);
+}
+
+@media (max-width: 900px) {
+  .intro {
+    max-width: none;
+  }
+
+  .row {
+    grid-template-columns: 3rem minmax(0, 1fr);
+    gap: var(--sp-3) var(--sp-4);
+  }
+
+  .rowBody {
+    grid-column: 2;
+  }
+
+  .rowMeta {
+    grid-column: 2;
+    justify-self: start;
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .services {
+    min-height: auto;
+    padding-block: calc(var(--nav-h) + var(--sp-7)) var(--sp-8);
+  }
+
+  .track {
+    gap: var(--sp-6);
+  }
+
+  /* No pin on narrow screens, so --section-progress never advances far enough
+     to reveal the later rows. Show them all and let the scroll reveal do it. */
+  .row {
+    opacity: 1;
+    transform: none;
+  }
+}

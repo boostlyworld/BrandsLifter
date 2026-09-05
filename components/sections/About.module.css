@@ -1,0 +1,213 @@
+/* ============================================================================
+   About — the altimeter
+   ----------------------------------------------------------------------------
+   The mountain painting has a genuinely dark olive foreground ridge along the
+   bottom and a pale, warm middle. So the copy sits high-left where the sky is
+   deep, and the three ascent marks sit on the ridge, which is the one part of
+   the picture that will hold cream type with no help at all.
+   ========================================================================== */
+
+.about {
+  position: relative;
+  z-index: var(--z-content);
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: var(--sp-6);
+  padding: calc(var(--nav-h) + var(--sp-6)) var(--gutter) var(--sp-7);
+}
+
+
+/* Scrims sized to the copy, not to the painting — see the note in Hero.module
+   .css. The mountains are pale through the middle and the warm horizon on the
+   right runs straight under the third ascent mark, and darkening the whole
+   scene enough to carry either would have flattened the picture. */
+.intro::before,
+.marks::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.intro::before {
+  /* See the note in Hero.module.css: the box has to be much larger than the
+     gradient, or its edge shows as a straight line across the mountains. */
+  inset: -45% -60% -45% -16%;
+  background: radial-gradient(
+    ellipse 34% 42% at 24% 50%,
+    rgb(var(--rgb-earth) / 0.84) 0%,
+    rgb(var(--rgb-earth) / 0.66) 42%,
+    rgb(var(--rgb-earth) / 0.28) 70%,
+    transparent 90%
+  );
+}
+
+/* A band rather than an ellipse: the marks run wide and low. */
+/* A band rather than an ellipse — the marks run wide and low — feathered on
+   both sides so it does not end in a vertical edge mid-picture. */
+.marks::before {
+  inset: -30% -10% -60% -8%;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgb(var(--rgb-earth) / 0.5) 20%,
+    rgb(var(--rgb-earth) / 0.78) 40%,
+    rgb(var(--rgb-earth) / 0.74) 68%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    #000 7%,
+    #000 84%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    #000 7%,
+    #000 84%,
+    transparent 100%
+  );
+}
+
+.intro {
+  position: relative;
+  isolation: isolate;
+  max-width: 40rem;
+  align-self: center;
+  /* The mountains are pale through the middle and the prose measured 4.0:1
+     against them. The tight shadow does the work; the wide one seats it. */
+  text-shadow:
+    0 1px 2px rgb(var(--rgb-earth) / 0.8),
+    0 2px 22px rgb(var(--rgb-earth) / 0.55);
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: var(--sp-5);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--ls-micro);
+  text-transform: uppercase;
+  color: var(--c-horizon);
+}
+
+.heading {
+  font-family: var(--ff-display);
+  font-size: var(--fs-h2);
+  font-weight: 400;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--ls-heading);
+  color: var(--ink-light);
+  text-wrap: balance;
+}
+
+.body {
+  max-width: var(--measure-text);
+  margin-top: var(--sp-6);
+  display: grid;
+  gap: var(--sp-4);
+  color: var(--ink-light-dim);
+  font-size: var(--fs-body);
+  line-height: 1.7;
+}
+
+/* ── The ascent marks ─────────────────────────────────────────────────────
+   Three ticks along a rule, read left to right like altitude marks on a gauge.
+   Not stat cards: no boxes, no icons, just the rule and the numbers. */
+.marks {
+  position: relative;
+  isolation: isolate;
+  text-shadow:
+    0 1px 2px rgb(var(--rgb-earth) / 0.8),
+    0 2px 22px rgb(var(--rgb-earth) / 0.55);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-6);
+  padding-top: var(--sp-5);
+  border-top: var(--hairline) solid var(--rule-light);
+  /* Stops short of the right edge on purpose: that strip of sky is the corridor
+     the balloon climbs through on its way to the clouds, and the marks are the
+     only full-width element on this section. Widen this and the balloon will
+     start crossing the third mark. */
+  width: min(100%, 60rem);
+}
+
+.mark {
+  position: relative;
+  padding-left: var(--sp-5);
+}
+
+/* The tick itself, rising out of the rule above. */
+.mark::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: calc(var(--sp-5) * -1);
+  width: 1px;
+  height: var(--sp-5);
+  background: var(--c-lift);
+  opacity: 0.55;
+}
+
+.markNumber {
+  display: block;
+  font-family: var(--ff-display);
+  font-size: var(--fs-small);
+  letter-spacing: 0.22em;
+  color: var(--c-lift);
+}
+
+.markTitle {
+  margin-top: var(--sp-3);
+  font-family: var(--ff-display);
+  font-size: var(--fs-h3);
+  font-weight: 400;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--ls-heading);
+  color: var(--ink-light);
+}
+
+.markBody {
+  margin-top: var(--sp-3);
+  max-width: 26rem;
+  font-size: var(--fs-small);
+  color: var(--ink-light-dim);
+}
+
+/* Below this the three columns are too narrow to be worth keeping, and — just
+   as important — the balloon's corridor on the right disappears. Stacking the
+   marks into a left-hand rail gives the whole right side back to the sky. */
+@media (max-width: 1100px) {
+  .marks {
+    grid-template-columns: 1fr;
+    gap: var(--sp-5);
+    width: min(100%, 34rem);
+  }
+
+  /* Stacked, the ticks read better as a left-hand rail than as risers. */
+  .mark {
+    padding-left: var(--sp-5);
+    border-left: var(--hairline) solid var(--rule-light);
+  }
+
+  .mark::before {
+    top: 0;
+    height: 1.4rem;
+    left: -1px;
+    opacity: 1;
+  }
+
+  .markBody {
+    max-width: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .about {
+    gap: var(--sp-7);
+    padding-top: calc(var(--nav-h) + var(--sp-7));
+  }
+}

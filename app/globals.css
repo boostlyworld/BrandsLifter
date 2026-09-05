@@ -1,0 +1,358 @@
+/* ============================================================================
+   BrandsLifter — design tokens
+   ----------------------------------------------------------------------------
+   THIS IS THE HAND-TUNING FILE. Almost every value you might want to nudge is
+   here, named and commented. The other two tuning files are:
+     lib/balloonPath.ts   — the balloon's flight path and idle float
+     content/site.ts      — every string on the site
+
+   Palette note: the seven colours below were sampled out of the actual painted
+   backgrounds in Scenes/try1/, not invented. The comment on each line says
+   which part of which painting it came from.
+   ========================================================================== */
+
+:root {
+  /* ── Palette · sampled from the paintings ──────────────────────────────── */
+  --c-night: #121d41;      /* night-sky zenith        — deepest ground, footer */
+  --c-deep-teal: #1d4a4c;  /* balloon skirt           — dark surfaces, wells   */
+  --c-sky-teal: #2e5c64;   /* mountain + hero sky     — scrims, hairlines      */
+  --c-earth: #292b1f;      /* mountain foreground     — ink, filled buttons    */
+  --c-horizon: #f4cda3;    /* warm horizon band       — warm secondary text    */
+  --c-cream: #fde5bf;      /* brightest horizon glow  — primary light text     */
+  --c-lift: #6fefc4;       /* THE accent: the sky teal lifted to full
+                              luminance. "Lift", focus rings, active states.
+                              Used sparingly — it only means something while
+                              it stays rare. */
+
+  /* RGB triplets so the palette can be used at alpha via rgb(var(--x) / a).
+     Keep these in sync with the hex values above. */
+  --rgb-night: 18 29 65;
+  --rgb-deep-teal: 29 74 76;
+  --rgb-sky-teal: 46 92 100;
+  --rgb-earth: 41 43 31;
+  --rgb-horizon: 244 205 163;
+  --rgb-cream: 253 229 191;
+  --rgb-lift: 111 239 196;
+
+  /* ── Semantic roles ───────────────────────────────────────────────────── */
+  --ink-light: var(--c-cream);                    /* text on dark scenes   */
+  --ink-light-dim: rgb(var(--rgb-cream) / 0.74);  /* secondary, dark scene */
+  --ink-dark: var(--c-earth);                     /* text on bright scenes */
+  --ink-dark-dim: rgb(var(--rgb-earth) / 0.78);   /* secondary, bright     */
+  --rule-light: rgb(var(--rgb-cream) / 0.24);     /* hairline on dark      */
+  --rule-dark: rgb(var(--rgb-earth) / 0.22);      /* hairline on bright    */
+
+  /* Scrims. The paintings are busy; text needs a veil to stay legible without
+     hiding the art. Raise the alpha to make text safer, lower it to let more
+     painting through. */
+  --scrim-dark: rgb(var(--rgb-earth) / 0.55);
+  --scrim-darker: rgb(var(--rgb-night) / 0.68);
+  --scrim-light: rgb(255 255 255 / 0.44);
+
+  /* ── Type ─────────────────────────────────────────────────────────────── */
+  /* The three families arrive as CSS vars from next/font in app/layout.tsx:
+     --font-aboreto  --font-arapey  --font-work-sans */
+  --ff-display: var(--font-aboreto), "Times New Roman", serif;
+  --ff-accent: var(--font-arapey), Georgia, serif;      /* always set italic */
+  --ff-body: var(--font-work-sans), system-ui, sans-serif;
+
+  /* Fluid scale. First number is the phone size, last the large-desktop size. */
+  /* Sized so "FROM THE GROUND UP" holds one line AND stops around half the
+     viewport width, leaving the tree and the balloon in clear air. Aboreto is
+     all-caps at roughly 0.62em per character and that line is 18 characters,
+     so the block is about 11.2 x the font size. Push this past ~5.5vw and the
+     hero stops being anchored to one corner and becomes a banner. */
+  --fs-display: clamp(2.35rem, 4.9vw, 5.5rem);          /* hero H1         */
+  --fs-h2: clamp(1.9rem, 1.2rem + 2.4vw, 3.25rem);      /* section titles  */
+  --fs-h3: clamp(1.35rem, 1.1rem + 1.05vw, 2rem);       /* service names   */
+  --fs-lead: clamp(1.05rem, 0.98rem + 0.42vw, 1.35rem); /* intro paragraph */
+  --fs-body: clamp(0.98rem, 0.94rem + 0.18vw, 1.075rem);
+  --fs-small: 0.875rem;
+  --fs-micro: 0.72rem;                                  /* eyebrows        */
+
+  --lh-display: 0.94;
+  --lh-heading: 1.08;
+  --lh-body: 1.62;
+
+  --ls-display: 0.005em;   /* Aboreto is a display face; it needs air …     */
+  --ls-heading: 0.015em;
+  --ls-micro: 0.2em;       /* … and eyebrows need a great deal of it        */
+
+  /* ── Spacing · a 4px-rooted scale ─────────────────────────────────────── */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-7: 3rem;
+  --sp-8: 4rem;
+  --sp-9: 6rem;
+  --sp-10: 8rem;
+
+  /* Page gutter and the widest a content band is allowed to get. */
+  --gutter: clamp(1.25rem, 0.6rem + 3vw, 4.5rem);
+  --measure-max: 78rem;    /* full content band          */
+  --measure-text: 34rem;   /* comfortable reading column */
+
+  /* ── Radii & borders ──────────────────────────────────────────────────── */
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-pill: 999px;
+  --hairline: 1px;
+
+  /* ── Motion ───────────────────────────────────────────────────────────── */
+  --dur-fast: 180ms;      /* hovers                                      */
+  --dur-nav: 360ms;       /* nav collapse on scroll (brief asks 300–400) */
+  --dur-reveal: 720ms;    /* section content fading in                   */
+  --dur-expand: 460ms;    /* a testimonial opening (see EXPAND_MS in TSX) */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* ── Nav ──────────────────────────────────────────────────────────────── */
+  --nav-h: 84px;               /* bar height at rest                      */
+  --nav-h-scrolled: 62px;      /* … and once past the scroll threshold    */
+  --nav-pad-x: var(--gutter);  /* content inset, constant                 */
+  /* How far the wordmark and the links each travel inward once scrolled.
+     It is a transform rather than a change of padding on purpose: animating
+     padding relayouts the bar on every frame of the transition, and this is
+     the one animation on the site that runs while the user is scrolling. */
+  --nav-converge: clamp(0.75rem, 3.4vw, 4.5rem);
+  --nav-ink: var(--ink-light);        /* swapped per scene — see Nav.tsx  */
+  --nav-ink-dim: rgb(var(--rgb-cream) / 0.72);
+
+  /* ── Scene opacities ──────────────────────────────────────────────────────
+     Written every scroll frame by components/stage/Stage.tsx. They live on
+     :root rather than on the elements because liquid-glass-js refracts a
+     *clone* of the backdrop — and a clone that reads these variables stays in
+     sync for free, instead of needing a re-clone on every frame. */
+  --scene-hero-o: 1;
+  --scene-about-o: 0;
+  --scene-services-o: 0;
+  --scene-rays-o: 0;
+  --scene-night-o: 0;
+
+  /* ── Layers ───────────────────────────────────────────────────────────── */
+  --z-stage: 0;
+
+  /* The testimonials' glass — the contact card and the open review — has to
+     paint ABOVE the fixed stage and BELOW the sections. Two things make that a
+     two-level gap rather than a one-level one: liquid-glass-js puts its lens at
+     the z it is given and its frosted pane at z + 1, and every section is a
+     stacking context, so nothing inside one can ever climb over a body-level
+     element that outranks it — a pane level with the content paints straight
+     over the contact form's own inputs.
+
+     So the content starts at 2, and 0/1 belong to the glass. The stage shares
+     0 with the lens and loses on document order, which is exactly what puts the
+     refraction in front of the painting it refracts. */
+  --z-section-glass: 0;
+  --z-content: 2;
+  --z-glass: 40;   /* liquid-glass-js draws its lens here, its pane at +1 */
+  --z-nav: 50;
+}
+
+/* ============================================================================
+   Reset / base
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* Not smooth. This page is over five thousand pixels tall, and native smooth
+     scrolling turns "Contact Us" in the hero into a multi-second scrub through
+     every scene before it arrives. An instant jump is the kinder answer at this
+     length, and it also keeps anchor navigation out of ScrollTrigger's way. */
+  scroll-behavior: auto;
+  /* The fixed nav must not cover an anchored section's heading. */
+  scroll-padding-top: var(--nav-h-scrolled);
+  -webkit-text-size-adjust: 100%;
+  /* Nothing on this page scrolls sideways. It has to be set HERE and not only
+     on body: the copy scrims are deliberately much larger than the copy they
+     cover (see .content::before in Hero.module.css and .intro::before in
+     About.module.css — a gradient that is still opaque at its own edge draws a
+     hard band across the painting), so they hang a few hundred pixels past the
+     right gutter. body overflow only propagates to the viewport while the root
+     is visible, and Chrome does not propagate `clip` that way, so without this
+     the page pans right onto empty sky. */
+  overflow-x: clip;
+}
+
+body {
+  margin: 0;
+  background: var(--c-earth);
+  color: var(--ink-light);
+  font-family: var(--ff-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Belt and braces with the root above, which is the one that counts. */
+  overflow-x: clip;
+}
+
+h1, h2, h3, h4, p, figure, blockquote {
+  margin: 0;
+}
+
+ul, ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+img, svg, canvas {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button, input, textarea, select {
+  font: inherit;
+  color: inherit;
+}
+
+/* ── Focus ────────────────────────────────────────────────────────────────
+   One visible ring everywhere, in the accent, with a dark halo behind it so it
+   survives on the bright cloud and light-ray scenes as well as the dark ones. */
+:focus-visible {
+  outline: 2px solid var(--c-lift);
+  outline-offset: 3px;
+  border-radius: var(--r-sm);
+  box-shadow: 0 0 0 5px rgb(var(--rgb-earth) / 0.45);
+}
+
+::selection {
+  background: rgb(var(--rgb-lift) / 0.3);
+  color: var(--c-cream);
+}
+
+/* ============================================================================
+   Shared utilities
+   ========================================================================== */
+
+/* Visually hidden, still read aloud. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip link — the first tab stop on the page. */
+.skipLink {
+  position: fixed;
+  top: var(--sp-3);
+  left: var(--sp-3);
+  z-index: 100;
+  padding: var(--sp-3) var(--sp-5);
+  background: var(--c-lift);
+  color: var(--c-earth);
+  font-weight: 600;
+  font-size: var(--fs-small);
+  border-radius: var(--r-pill);
+  transform: translateY(-180%);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.skipLink:focus-visible {
+  transform: translateY(0);
+}
+
+/* ── Scroll reveal ────────────────────────────────────────────────────────
+   Driven by lib/useReveal.ts. Elements start slightly low and transparent, then
+   settle as they enter the viewport.
+
+   Note the [data-reveal-root] gate. That attribute is only ever added by the
+   hook, so if the bundle is slow, blocked, or throws, nothing is hidden in the
+   first place and the page reads as ordinary static HTML. Content must never
+   depend on JavaScript merely to be visible. */
+[data-reveal-root] [data-reveal] {
+  opacity: 0;
+  transform: translateY(var(--reveal-shift, 18px));
+  transition:
+    opacity var(--dur-reveal) var(--ease-out),
+    transform var(--dur-reveal) var(--ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+[data-reveal-root] [data-reveal="in"] {
+  opacity: 1;
+  transform: none;
+}
+
+/* ============================================================================
+   liquid-glass-js overrides
+   ----------------------------------------------------------------------------
+   The library appends its own .lqg-lens / .lqg-glass elements to <body> and
+   ships a heavy drop shadow meant for a small floating draggable panel. The nav
+   is a full-width strip, so its shadow is replaced with a bright hairline along
+   the bottom edge and one soft cast beneath it. The testimonials' panes are
+   small floating surfaces after all, so they opt out by class name.
+   ========================================================================== */
+
+.lqg-glass:not(.lqg-section) {
+  box-shadow:
+    0 1px 0 0 rgb(var(--rgb-cream) / 0.16),
+    0 18px 40px -28px rgb(var(--rgb-night) / 0.55) !important;
+}
+
+/* The testimonials' panes are small floating surfaces rather than a full-bleed
+   strip, so they keep a shadow — just a softer one than the library's, seated
+   in the section's own earth tone. SectionGlass.tsx adds the class. */
+.lqg-glass.lqg-section {
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.4),
+    0 30px 70px -40px rgb(var(--rgb-earth) / 0.75) !important;
+}
+
+/* ============================================================================
+   Reduced motion
+   ----------------------------------------------------------------------------
+   The JS side (Stage, Balloon, RayGlow, GlassSurface) checks the same query and
+   swaps to a static, unpinned, unscrubbed version of the site. This block is
+   the CSS half of that promise.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Under reduced motion the scenes are swapped by an IntersectionObserver
+     rather than scrubbed. A cross-fade between two still paintings is not a
+     motion hazard, so it is exempted from the blanket kill above — cutting
+     between them would be harsher, not kinder. */
+  [data-scene-layer] {
+    transition: opacity 520ms linear !important;
+  }
+
+  /* Keep the reveal, lose the travel — a fade is not a motion problem. */
+  [data-reveal-root] [data-reveal] {
+    transform: none;
+    transition: opacity var(--dur-reveal) var(--ease-out) !important;
+  }
+}

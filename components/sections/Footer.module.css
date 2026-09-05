@@ -1,0 +1,185 @@
+/* ============================================================================
+   Footer — the night sky
+   ----------------------------------------------------------------------------
+   The last scene is the darkest and the quietest, and the footer is mostly the
+   same: small type, wide tracking, one hairline. The exception is the name,
+   which opens the section at the full width of the measure. A visitor who has
+   read five thousand pixels of a scroll should be told who it was, once,
+   properly — and then handed the small print.
+
+   Three blocks, sharing one left and right edge: the wordmark, the columns,
+   the base line.
+   ========================================================================== */
+
+.footer {
+  position: relative;
+  z-index: var(--z-content);
+  min-height: 100svh;
+  display: grid;
+  align-content: center;
+  gap: var(--sp-8);
+  padding: calc(var(--nav-h) + var(--sp-8)) var(--gutter) var(--sp-7);
+  color: var(--ink-light);
+}
+
+/* ── The name ─────────────────────────────────────────────────────────────
+   Fills the measure exactly at every width — the fitting is done by the SVG's
+   textLength, not here (see Footer.tsx). All this owns is the band it sits in
+   and how it is painted. */
+.mark {
+  display: block;
+  width: min(100%, var(--measure-max));
+  margin-inline: auto;
+  overflow: visible;
+}
+
+.markText {
+  font-family: var(--ff-display);
+  /* The viewBox is 132 units tall; this is the cap height inside it. The SVG
+     scales the whole thing to the measure, so this number is a proportion, not
+     a size. */
+  font-size: 100px;
+  text-transform: uppercase;
+  fill: var(--ink-light);
+}
+
+
+.inner {
+  position: relative;
+  width: min(100%, var(--measure-max));
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(0, 1fr));
+  gap: var(--sp-7);
+  align-items: start;
+}
+
+.brand {
+  display: grid;
+  gap: var(--sp-3);
+  align-content: start;
+}
+
+.tagline {
+  font-family: var(--ff-accent);
+  font-style: italic;
+  font-size: var(--fs-body);
+  color: var(--ink-light-dim);
+  max-width: 22rem;
+}
+
+/* The way back to the form. Quiet — a text link, not a second button — because
+   by this point the visitor has either written or decided not to, and shouting
+   at them on the way out would not change that. */
+.closer {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--c-lift);
+  transition: gap var(--dur-fast) var(--ease-out);
+}
+
+.closer svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+.closer:hover {
+  gap: var(--sp-4);
+}
+
+.colTitle {
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--ls-micro);
+  text-transform: uppercase;
+  /* Measured 4.12:1 at 0.66 against the night sky at this size. */
+  color: rgb(var(--rgb-cream) / 0.82);
+  margin-bottom: var(--sp-4);
+}
+
+.list {
+  display: grid;
+  gap: var(--sp-2);
+  justify-items: start;
+}
+
+.link {
+  position: relative;
+  /* 44px of thumb, however small the label. Measured at 16px tall before. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: var(--fs-small);
+  color: var(--ink-light-dim);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  /* Under the text, not at the bottom of the enlarged hit area. */
+  bottom: 25%;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.link:hover {
+  color: var(--c-lift);
+}
+
+.link:hover::after {
+  transform: scaleX(1);
+}
+
+.email {
+  font-size: var(--fs-body);
+  color: var(--c-horizon);
+}
+
+/* ── Small print ──────────────────────────────────────────────────────────── */
+.base {
+  position: relative;
+  width: min(100%, var(--measure-max));
+  margin-inline: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4) var(--sp-6);
+  justify-content: space-between;
+  align-items: baseline;
+  padding-top: var(--sp-5);
+  border-top: var(--hairline) solid rgb(var(--rgb-cream) / 0.16);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.06em;
+  /* 0.5 measured under 4.5:1 against the night sky at this size. */
+  color: rgb(var(--rgb-cream) / 0.68);
+}
+
+@media (max-width: 768px) {
+  .footer {
+    min-height: auto;
+    padding-block: calc(var(--nav-h) + var(--sp-7)) var(--sp-7);
+    gap: var(--sp-7);
+  }
+
+  /* Twelve letters across a phone leaves the strokes too fine to read as the
+     brand rather than as a rule. Backing off the full bleed keeps the weight. */
+  .mark {
+    width: 100%;
+  }
+
+  .inner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-6);
+  }
+}

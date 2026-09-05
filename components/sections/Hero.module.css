@@ -1,0 +1,257 @@
+/* The legibility wash for this section lives on the hero scene layer
+   (components/stage/scenes.ts), not here — it has to fade in and out with the
+   painting it belongs to rather than stop at the section boundary. */
+
+/* ============================================================================
+   Hero
+   ----------------------------------------------------------------------------
+   The painting does the visual work; the section is transparent and only holds
+   type. Content is anchored to the lower left — not centred — so the tree, the
+   horizon and the balloon on the right all stay in view.
+   ========================================================================== */
+
+.hero {
+  position: relative;
+  z-index: var(--z-content);
+  min-height: 100svh;
+  display: grid;
+  /* One column, two rows: everything springs to the bottom, the scroll cue
+     pins itself to the corner. */
+  grid-template-rows: 1fr auto;
+  align-items: end;
+  padding: calc(var(--nav-h) + var(--sp-6)) var(--gutter) var(--sp-8);
+}
+
+
+/* The copy's own scrim, sized and feathered to the copy rather than to the
+   painting. The scene wash underneath handles broad legibility; this handles
+   the eyebrow, which is 11px type sitting directly on the sunrise — the
+   brightest band in the picture. Darkening the whole scene enough to carry it
+   was dimming the tree and the balloon for the sake of one line. */
+.content::before {
+  content: "";
+  position: absolute;
+  /* Generous insets so the gradient can reach transparent well inside its own
+     box. Sized any tighter, the ellipse is still opaque where the element ends
+     and the result is a hard horizontal band ruled across the painting. */
+  inset: -70% -30% -30% -14%;
+  z-index: -1;
+  pointer-events: none;
+  /* Narrow horizontally on purpose: the copy needs covering, the balloon —
+     out at roughly 84% of this box — does not. */
+  background: radial-gradient(
+    ellipse 40% 46% at 22% 66%,
+    rgb(var(--rgb-earth) / 0.88) 0%,
+    rgb(var(--rgb-earth) / 0.68) 40%,
+    rgb(var(--rgb-earth) / 0.3) 68%,
+    transparent 88%
+  );
+}
+
+.content {
+  position: relative;
+  isolation: isolate;
+  /* No cap: the heading is sized to fit the gutters exactly (see --fs-display),
+     so any max-width here would only force it to wrap early. */
+  max-width: 100%;
+  /* A local shadow rather than a box: keeps the type readable against the
+     brightest part of the horizon without drawing a panel over the painting.
+     Two layers on purpose — the tight one is what carries the small type (the
+     eyebrow measured 2.3:1 against the horizon glow with only the soft one),
+     the wide one seats the whole block. */
+  text-shadow:
+    0 1px 2px rgb(var(--rgb-earth) / 0.85),
+    0 2px 26px rgb(var(--rgb-earth) / 0.62);
+}
+
+.eyebrow {
+  margin-bottom: var(--sp-5);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--ls-micro);
+  text-transform: uppercase;
+  color: var(--c-cream);
+}
+
+/* A short rule ahead of the eyebrow — the first of the hairlines that run
+   through every section of the site. */
+.eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 2.5rem;
+  height: 1px;
+  margin-right: var(--sp-3);
+  vertical-align: middle;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.heading {
+  font-family: var(--ff-display);
+  font-size: var(--fs-display);
+  font-weight: 400;
+  line-height: var(--lh-display);
+  letter-spacing: var(--ls-display);
+  color: var(--ink-light);
+  text-wrap: balance;
+}
+
+.line {
+  display: block;
+}
+
+/* The one place the accent appears at size. Arapey italic against Aboreto's
+   upright caps is the whole typographic idea of the site in two words. */
+.lift {
+  font-family: var(--ff-accent);
+  font-style: italic;
+  font-size: 1.12em; /* Arapey runs small next to Aboreto */
+  color: var(--c-lift);
+  /* The glow is the brief's "subtle" — two soft halos, no hard outline. */
+  text-shadow:
+    0 0 28px rgb(var(--rgb-lift) / 0.45),
+    0 0 70px rgb(var(--rgb-lift) / 0.22);
+  padding-right: 0.06em; /* italic overhang */
+}
+
+/* ── Actions ──────────────────────────────────────────────────────────────
+   One filled CTA and one text link. They are deliberately unequal: the ghost
+   button pattern next to a filled one makes visitors choose, which is the last
+   thing this page wants. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-6);
+  margin-top: var(--sp-7);
+}
+
+.primary {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--sp-4) var(--sp-7);
+  border-radius: var(--r-pill);
+  background: var(--c-cream);
+  color: var(--c-earth);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 0 12px 32px -18px rgb(var(--rgb-earth) / 0.9);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+/* Hover is where the accent and the action meet: the button becomes the same
+   colour as the word "Lift". */
+.primary:hover {
+  background: var(--c-lift);
+  transform: translateY(-2px);
+}
+
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  /* Matches the primary CTA's height as a tap target, without matching its
+     visual weight — it is still a text link, just a reachable one. */
+  min-height: 44px;
+  gap: var(--sp-3);
+  font-size: var(--fs-small);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ink-light-dim);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.secondary:hover {
+  color: var(--ink-light);
+}
+
+.arrow {
+  width: 1.1em;
+  height: 1.1em;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.secondary:hover .arrow {
+  transform: translateX(4px);
+}
+
+/* ── Scroll cue ───────────────────────────────────────────────────────────
+   Reads as an altimeter tick rather than a bouncing mouse icon: a hairline
+   with a bead that falls down it, once every few seconds. */
+.cue {
+  position: relative;
+  justify-self: end;
+  /* Gone within the first sixth of the hero's scroll. It is an invitation to
+     start, and once you have started it would only ride up under the nav.
+     --section-progress comes from lib/useSectionProgress.ts. */
+  opacity: clamp(0, 1 - var(--section-progress, 0) * 6, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--ls-micro);
+  text-transform: uppercase;
+  color: var(--ink-light-dim);
+}
+
+.cueTrack {
+  position: relative;
+  width: 1px;
+  height: 3.5rem;
+  background: var(--rule-light);
+  overflow: hidden;
+}
+
+.cueTrack::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 40%;
+  background: linear-gradient(180deg, transparent, var(--c-lift));
+  animation: cueFall 2.8s var(--ease-in-out) infinite;
+}
+
+@keyframes cueFall {
+  0% { transform: translateY(-100%); }
+  60%, 100% { transform: translateY(250%); }
+}
+
+/* Reduced motion pins --section-progress to 1, which would hide the cue before
+   it was ever seen. There is no scrubbing to signpost in that mode, but the
+   page is still a long scroll and the invitation still applies. */
+@media (prefers-reduced-motion: reduce) {
+  .cue {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding-bottom: var(--sp-6);
+  }
+
+  .content {
+    text-shadow:
+      0 1px 2px rgb(var(--rgb-earth) / 0.85),
+      0 2px 20px rgb(var(--rgb-earth) / 0.72);
+  }
+
+  .actions {
+    gap: var(--sp-5);
+    margin-top: var(--sp-6);
+  }
+
+  .primary {
+    padding: var(--sp-3) var(--sp-6);
+  }
+
+  /* On a phone the cue would sit under the thumb and beside the CTA. */
+  .cue {
+    display: none;
+  }
+}

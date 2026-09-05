@@ -1,0 +1,40 @@
+.backdrop {
+  position: absolute;
+  inset: 0;
+  /* Something opaque behind the paintings so a slow-loading image never shows
+     a white flash between two scenes. */
+  background: var(--c-earth);
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  /* Opacity comes from a CSS custom property written by Stage.tsx, not from an
+     inline style. That is deliberate: liquid-glass-js refracts a *clone* of this
+     element, and because a clone inherits :root variables it stays in sync with
+     the crossfade for free. An inline style would have frozen at clone time. */
+  opacity: var(--layer-o, 0);
+  will-change: opacity;
+}
+
+.image {
+  object-fit: cover;
+  object-position: var(--layer-pos);
+}
+
+/* Each scene's own legibility wash. It sits inside the layer, so it inherits
+   the layer's opacity and crossfades with its painting instead of stopping dead
+   at a section boundary. The gradient itself is defined per scene in scenes.ts,
+   next to the painting it belongs to. */
+.wash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .image {
+    object-position: var(--layer-pos-mobile);
+  }
+
+}

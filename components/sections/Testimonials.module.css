@@ -1,0 +1,410 @@
+/* ============================================================================
+   Testimonials + contact — the light-rays section
+   ----------------------------------------------------------------------------
+   Two surfaces made of the same glass: the contact card, and whichever
+   testimonial is currently open. Both are real liquid-glass-js lenses, driven
+   by SectionGlass.tsx; everything here is the CSS half of that — the geometry
+   the lens is aimed at, and a backdrop-filter fallback for the cases where the
+   library does not run (narrow screens, reduced motion, a failed import).
+
+   Layout: the form dead centre, four avatars orbiting it — two either side,
+   staggered vertically. Each avatar opens into the full review on hover, focus
+   or tap, expanding in place over its neighbours rather than pushing them.
+   ========================================================================== */
+
+.testimonials {
+  position: relative;
+  z-index: var(--z-content);
+  min-height: 100svh;
+  display: grid;
+  align-content: center;
+  gap: var(--sp-8);
+  padding: calc(var(--nav-h) + var(--sp-8)) var(--gutter) var(--sp-9);
+  color: var(--ink-dark);
+  overflow: hidden;
+}
+
+/* ── The shadergradient glow ──────────────────────────────────────────────
+   Blended into the painting rather than laid on top of it, and masked to a
+   soft ring: the light gathers in the two columns where the testimonials sit
+   and stays clear of the middle, where the contact card is.
+
+   The hole in the middle is not a composition choice, it is a necessity. The
+   card's glass is a liquid-glass-js lens, which refracts a *clone* of the
+   element it is pointed at — and the glow is a WebGL canvas, which clones
+   blank. So the lens can never carry the glow, and a glow behind the card would
+   simply be painted over. Better to light the rest of the section with it. */
+.glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* soft-light keeps the painting's own values intact and only pushes the
+     light around inside them — the gradient reads as the rays breathing rather
+     than as a video playing behind the section. Swap to "overlay" for a
+     stronger, more saturated version. */
+  mix-blend-mode: soft-light;
+  opacity: 1;
+  /* The ring must close well inside the section's own box. The section clips
+     its overflow, so a mask that is still partly opaque at the top edge turns
+     the glow into a hard-edged rectangle across the sky. */
+  mask-image: radial-gradient(
+    ellipse 64% 44% at 50% 50%,
+    transparent 0%,
+    transparent 26%,
+    rgb(0 0 0 / 0.58) 46%,
+    rgb(0 0 0 / 0.62) 62%,
+    transparent 88%
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse 64% 44% at 50% 50%,
+    transparent 0%,
+    transparent 26%,
+    rgb(0 0 0 / 0.58) 46%,
+    rgb(0 0 0 / 0.62) 62%,
+    transparent 88%
+  );
+}
+
+
+.head {
+  position: relative;
+  text-align: center;
+}
+
+.eyebrow {
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--ls-micro);
+  text-transform: uppercase;
+  color: var(--c-deep-teal);
+}
+
+/* ── The orbit ────────────────────────────────────────────────────────────── */
+.orbit {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 34rem) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(var(--sp-5), 3vw, var(--sp-8));
+  width: min(100%, var(--measure-max));
+  margin-inline: auto;
+
+  /* Collapsed diameter — the avatar itself, the same for all four. */
+  --avatar: 5.5rem;
+  /* Open diameter, before each item's own --open-scale. Capped against the
+     column an open circle has to fit inside: the sides are what is left after
+     the form takes its 34rem, which is about 202px at 1100 and 309px at 1440.
+     Uncapped, a testimonial on the left would open across the form. Sized to
+     stay just inside the column's own gap at the tightest width, and to reach
+     17.5rem — the diameter the longest quote needs — by 1400. */
+  --open-cap: clamp(13rem, 20vw, 17.5rem);
+}
+
+.side {
+  display: grid;
+  /* Generous, because the slots are now small and an open circle is not: this
+     is the room it expands into before it starts covering its neighbour. */
+  gap: clamp(var(--sp-7), 12vh, var(--sp-10));
+  justify-items: center;
+}
+
+/* Right-hand pair is nudged the other way so the two sides are not mirrors. */
+.sideRight {
+  padding-top: clamp(var(--sp-6), 8vh, var(--sp-10));
+}
+
+.sideLeft {
+  padding-bottom: clamp(var(--sp-6), 8vh, var(--sp-10));
+}
+
+/* The middle of the orbit, and what the card's lens is aimed at. It carries no
+   surface of its own — the glass is behind it and the wash is on .card — but it
+   is the stable box the lens measures, and the #contact anchor target. */
+.formCell {
+  position: relative;
+}
+
+/* ── A testimonial ────────────────────────────────────────────────────────
+   The slot is only ever the size of the avatar. The circle inside it is
+   absolutely positioned and centred, so growing it moves nothing else on the
+   page — it simply floats over its neighbours, which is what lets one open
+   without the whole orbit shuffling. */
+.slot {
+  position: relative;
+  width: var(--avatar);
+  height: var(--avatar);
+  --open: calc(var(--open-cap) * var(--open-scale, 1));
+}
+
+/* The open one has to paint over the other three. */
+.slot[data-open="true"] {
+  z-index: 2;
+}
+
+/* What SectionGlass aims the lens at: the open diameter, always, whatever the
+   circle is currently doing. Measuring the circle itself would rebuild the
+   lens's displacement map on every frame of the expansion. */
+.glassBox {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  width: var(--open);
+  height: var(--open);
+  border-radius: 50%;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* A ring, not a filled bubble: the quote should feel like it is written on the
+   air in front of the light. Closed, it is exactly the avatar's size and hidden
+   underneath it; open, it is the full circle with the review inside. */
+.circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  width: var(--avatar);
+  height: var(--avatar);
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--sp-2);
+  /* The top inset clears the avatar, which rises to sit on the circle's upper
+     edge; the sides keep every line inside the ring, since a circle's usable
+     width at the top and bottom of a text block is much less than its diameter.
+     These three are tuned against --open in .trigger and .disc below — move one
+     and the quote runs into the face. */
+  padding: calc(var(--open) * 0.32) calc(var(--open) * 0.14)
+    calc(var(--open) * 0.13);
+  border-radius: 50%;
+  border: var(--hairline) solid rgb(var(--rgb-earth) / 0.24);
+  background: rgb(255 255 255 / 0.1);
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+  transition:
+    width var(--dur-expand) var(--ease-out),
+    height var(--dur-expand) var(--ease-out),
+    opacity var(--dur-expand) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+.slot[data-open="true"] .circle {
+  width: var(--open);
+  height: var(--open);
+  opacity: 1;
+  pointer-events: auto;
+  border-color: rgb(var(--rgb-cream) / 0.5);
+}
+
+/* Fallback surface. The real lens is a liquid-glass-js pane sitting behind the
+   section; when it is not running, this stands in for it — the same frost and
+   the same lift, without the refraction. */
+.testimonials[data-glass="css"] .circle {
+  background: rgb(255 255 255 / 0.26);
+  backdrop-filter: blur(18px) saturate(1.35);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.5),
+    0 30px 70px -40px rgb(var(--rgb-earth) / 0.7);
+}
+
+.quote {
+  font-family: var(--ff-accent);
+  font-style: italic;
+  font-size: clamp(0.82rem, 0.66rem + 0.42vw, 1.05rem);
+  line-height: 1.36;
+  color: var(--ink-dark);
+  text-wrap: balance;
+}
+
+/* Fades a beat behind the circle so the review arrives in a finished shape
+   rather than being stretched open along with it. */
+.quote,
+.attribution {
+  opacity: 0;
+  transition: opacity 260ms var(--ease-out);
+}
+
+.slot[data-open="true"] .quote,
+.slot[data-open="true"] .attribution {
+  opacity: 1;
+  transition-delay: 200ms;
+}
+
+.attribution {
+  max-width: 100%;
+  font-size: var(--fs-micro);
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-deep-teal);
+  font-style: normal;
+}
+
+.role {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  color: var(--ink-dark-dim);
+}
+
+/* ── The avatar ───────────────────────────────────────────────────────────
+   The one thing that is always visible, and the only thing that is interactive.
+   It rises to the top of the circle as that opens, so the review has the middle
+   and the face stays attached to it. */
+.trigger {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  width: var(--avatar);
+  height: var(--avatar);
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 1;
+  transition: translate var(--dur-expand) var(--ease-out);
+}
+
+.slot[data-open="true"] .trigger {
+  translate: -50% calc(-50% - var(--open) * 0.335);
+}
+
+.disc {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 50%;
+  border: var(--hairline) solid rgb(var(--rgb-cream) / 0.75);
+  background: rgb(var(--rgb-cream) / 0.42);
+  box-shadow: 0 10px 24px -16px rgb(var(--rgb-earth) / 0.9);
+  font-family: var(--ff-display);
+  font-size: 1.05rem;
+  letter-spacing: 0.14em;
+  /* The initials sit optically centred once the tracking on the last letter is
+     taken off the right-hand side. */
+  text-indent: 0.14em;
+  color: var(--c-deep-teal);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    scale var(--dur-expand) var(--ease-out);
+}
+
+.slot[data-open="true"] .disc {
+  scale: 0.62;
+  border-color: var(--c-deep-teal);
+}
+
+.trigger:hover .disc {
+  border-color: var(--c-deep-teal);
+}
+
+.photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Narrow screens ───────────────────────────────────────────────────────
+   Circles stop being circles below the breakpoint. A ring wide enough to hold
+   a sentence would run off a phone screen, and an expand-on-hover interaction
+   has nothing to expand from on a touch device with no room for the result. */
+@media (max-width: 1024px) {
+  .orbit {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-7);
+  }
+
+  .side {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-5);
+    justify-items: center;
+  }
+
+  .sideLeft,
+  .sideRight {
+    padding: 0;
+  }
+
+  /* No reordering: stacked, the DOM order gives two testimonials, then the
+     form, then two more. A cold visitor should be given a reason before being
+     asked, and the form still sits in the middle of its proof. */
+}
+
+/* Below this the reviews are simply shown — no avatars to open, no expansion,
+   because there is no room for a circle to expand into. The layout goes back to
+   plain quotes with a left rule, which is honest about the constraint rather
+   than squeezing. */
+@media (max-width: 640px) {
+  .side {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-5);
+  }
+
+  .slot {
+    width: 100%;
+    height: auto;
+  }
+
+  .glassBox,
+  .trigger {
+    display: none;
+  }
+
+  .circle {
+    position: static;
+    translate: none;
+    width: 100%;
+    height: auto;
+    opacity: 1;
+    pointer-events: auto;
+    aspect-ratio: auto;
+    border-radius: var(--r-md);
+    padding: var(--sp-5);
+    text-align: left;
+    justify-items: start;
+    border: 0;
+    border-left: 2px solid rgb(var(--rgb-deep-teal) / 0.5);
+    background: rgb(255 255 255 / 0.2);
+  }
+
+  .quote,
+  .attribution {
+    opacity: 1;
+  }
+
+  .quote {
+    font-size: clamp(0.92rem, 0.8rem + 0.35vw, 1.12rem);
+    text-wrap: pretty;
+  }
+}
+
+@media (max-width: 768px) {
+  .testimonials {
+    min-height: auto;
+    gap: var(--sp-7);
+    padding-block: calc(var(--nav-h) + var(--sp-7)) var(--sp-8);
+  }
+}
+
+/* Reduced motion gets the same disclosure without the travel: the circle and
+   the avatar snap between the two states (the blanket rule in globals.css cuts
+   every transition to 0.01ms) and only the review itself fades, which is not a
+   motion problem. */
+@media (prefers-reduced-motion: reduce) {
+  .quote,
+  .attribution {
+    transition: opacity var(--dur-reveal) var(--ease-out) !important;
+    transition-delay: 0s !important;
+  }
+}

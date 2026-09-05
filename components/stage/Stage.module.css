@@ -1,0 +1,14 @@
+/* The stage sits behind the entire document and never scrolls. Every section
+   is transparent and rides over it, which is what makes the balloon read as
+   travelling across one continuous sky rather than hopping between five
+   separate pictures. */
+.stage {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-stage);
+  pointer-events: none;
+  /* 100svh, not 100vh: mobile browser chrome must not push the sky around
+     while the address bar collapses. */
+  height: 100svh;
+  overflow: hidden;
+}

@@ -1,0 +1,149 @@
+/* ============================================================================
+   Glass tuner — a development tool, not part of the site
+   ----------------------------------------------------------------------------
+   Deliberately not built from the site's design tokens. It is an instrument
+   sitting on top of the thing being measured, and it should never be mistaken
+   for part of it: neutral greys, system type, hard edges, no paintings.
+   ========================================================================== */
+
+.panel {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  /* Above the nav (--z-nav: 50) and its glass, since it has to be reachable
+     wherever you happen to be on the page. */
+  z-index: 9999;
+  width: 268px;
+  max-height: calc(100svh - 32px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  background: rgb(18 20 24 / 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 18px 48px -24px rgb(0 0 0 / 0.9);
+  color: #e8eaed;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 10px;
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.title {
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #9aa2ad;
+}
+
+.toggle {
+  padding: 2px 7px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.toggle:hover {
+  background: rgb(255 255 255 / 0.09);
+}
+
+.body {
+  overflow-y: auto;
+  padding: 10px;
+  display: grid;
+  gap: 11px;
+}
+
+.row {
+  display: grid;
+  gap: 3px;
+}
+
+.label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.name {
+  color: #e8eaed;
+}
+
+.value {
+  color: #7fd1c1;
+  font-variant-numeric: tabular-nums;
+}
+
+.hint {
+  color: #6b7480;
+  font-size: 10px;
+}
+
+.slider {
+  width: 100%;
+  margin: 2px 0 0;
+  accent-color: #7fd1c1;
+  cursor: pointer;
+}
+
+.colorRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color {
+  width: 34px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  padding: 9px 10px;
+  border-top: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.action {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.action:hover {
+  background: rgb(255 255 255 / 0.09);
+}
+
+.action[data-done="true"] {
+  border-color: #7fd1c1;
+  color: #7fd1c1;
+}
+
+.note {
+  padding: 0 10px 9px;
+  color: #6b7480;
+  font-size: 10px;
+}

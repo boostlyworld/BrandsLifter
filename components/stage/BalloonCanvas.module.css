@@ -1,0 +1,37 @@
+.canvasWrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.canvasWrap canvas {
+  /* The WebGL context has no business capturing clicks — everything the user
+     can act on lives in the sections above the stage. */
+  pointer-events: none !important;
+}
+
+/* Reduced-motion fallback: the same sprite, held still beside the tree.
+   The numbers mirror BALLOON_PATH[0] and MOBILE_ADJUST in lib/balloonPath.ts —
+   if you retune the first waypoint, retune these to match. */
+.staticBalloon {
+  position: absolute;
+  left: 50%;
+  /* height 26.8vh = waypoint scale 0.185 x BALLOON_SCALE 1.45; bottom 10.6% + half
+     the height puts its centre at 24% up the viewport, which is waypoint y of
+     -0.26. */
+  height: 26.8vh;
+  bottom: 10.6%;
+  width: auto;
+  /* Waypoint x of 0.19 — that fraction of the viewport right of centre. */
+  translate: calc(-50% + 19vw) 0;
+}
+
+@media (max-width: 768px) {
+  /* Matches the mobile transform: x 0.19 * 0.9 + 0.06, y -0.26 * 0.55 + 0.16,
+     scale 0.185 * 1.45 * 0.72. */
+  .staticBalloon {
+    height: 19.3vh;
+    bottom: 42.1%;
+    translate: calc(-50% + 23.1vw) 0;
+  }
+}

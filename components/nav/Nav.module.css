@@ -1,0 +1,332 @@
+/* ============================================================================
+   Nav
+   ----------------------------------------------------------------------------
+   Transparent at rest, glass once scrolled. The bar sits over five very
+   different paintings, so both the ink and the scrim behind it are swapped per
+   scene rather than averaged into one compromise that works nowhere.
+   ========================================================================== */
+
+.nav {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: var(--z-nav);
+  height: var(--nav-h);
+  display: flex;
+  align-items: center;
+  color: var(--nav-ink);
+  /* The ink swap is a legibility mechanism, not a flourish — it runs at the
+     same speed as the links so the two never disagree about which scene is
+     behind them. Only the height eases on the slower nav timing. */
+  transition:
+    height var(--dur-nav) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+/* A soft wash under the bar. It is what makes the wordmark readable over the
+   hero's mid-tone teal sky without putting a solid bar there at rest. Its
+   colour flips with the scene — dark over dark paintings, light over bright
+   ones — via --nav-scrim. */
+.nav::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: calc(var(--nav-h) * 1.8);
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    var(--nav-scrim) 0%,
+    color-mix(in srgb, var(--nav-scrim) 40%, transparent) 52%,
+    transparent 100%
+  );
+  transition: opacity var(--dur-nav) var(--ease-out);
+}
+
+/* Scrolled: the bar tightens and the glass takes over the legibility job. */
+.nav[data-scrolled="true"] {
+  height: var(--nav-h-scrolled);
+}
+
+.nav[data-scrolled="true"]::before {
+  opacity: 0.35;
+}
+
+/* CSS fallback for the glass: used on narrow screens, under reduced motion, and
+   if liquid-glass-js cannot start. Visually quieter than the real thing, but it
+   has to do the same job — the bar is only 56px tall on a phone, and section
+   headings scrolling underneath it were still legible through a lighter tint. */
+.nav[data-glass="css"][data-scrolled="true"] {
+  background: rgb(var(--rgb-deep-teal) / 0.62);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  box-shadow: inset 0 -1px 0 0 rgb(var(--rgb-cream) / 0.14);
+}
+
+/* Over the two bright scenes the fallback tints light instead of dark. */
+.nav[data-glass="css"][data-scrolled="true"][data-ink="dark"] {
+  background: rgb(253 245 235 / 0.72);
+  box-shadow: inset 0 -1px 0 0 rgb(var(--rgb-earth) / 0.16);
+}
+
+.inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-5);
+  width: 100%;
+  padding-inline: var(--nav-pad-x);
+}
+
+/* ── The convergence ──────────────────────────────────────────────────────
+   Scrolled, the wordmark and the link row travel toward each other. Both moves
+   are transforms rather than a change of inset: the bar's padding stays put and
+   nothing relayouts, which matters because this transition fires mid-scroll. */
+.links {
+  transition: transform var(--dur-nav) var(--ease-out);
+}
+
+.nav[data-scrolled="true"] .wordmark {
+  transform: translateX(var(--nav-converge));
+}
+
+.nav[data-scrolled="true"] .links {
+  transform: translateX(calc(var(--nav-converge) * -1));
+}
+
+/* ── Wordmark ─────────────────────────────────────────────────────────────
+   No logo mark by decision — the name in Aboreto, letterspaced, is the mark. */
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  /* Explicit rather than inherited, so it changes on the same clock as the
+     links rather than on the bar's slower height transition. */
+  color: var(--nav-ink);
+  transition:
+    transform var(--dur-nav) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    text-shadow var(--dur-fast) var(--ease-out);
+  font-family: var(--ff-display);
+  font-size: clamp(1.05rem, 0.9rem + 0.55vw, 1.4rem);
+  letter-spacing: 0.06em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.wordmark,
+.link,
+.action {
+  text-shadow: var(--nav-halo);
+}
+
+.wordmark:hover {
+  color: var(--nav-accent);
+}
+
+/* ── Links ────────────────────────────────────────────────────────────────── */
+.links {
+  display: flex;
+  align-items: center;
+  gap: clamp(var(--sp-4), 1.6vw, var(--sp-6));
+}
+
+.link {
+  position: relative;
+  /* Not inline-block: the label is small type, but the thing a thumb has to
+     land on is 44px tall at every width. Tablets are ≥768 and still touch. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  white-space: nowrap;
+  font-size: var(--fs-small);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--nav-ink-dim);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+/* Only one of the two labels is ever displayed. display:none rather than
+   visually-hidden, so the other stays out of the accessible name. */
+.labelShort {
+  display: none;
+}
+
+/* A rule that grows from the left on hover, and sits fully drawn on the section
+   you are actually in. */
+.link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  /* Sits under the text, not at the bottom of the enlarged hit area. */
+  bottom: 22%;
+  height: 1px;
+  width: 100%;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.link:hover,
+.link:focus-visible {
+  color: var(--nav-ink);
+}
+
+.link:hover::after {
+  transform: scaleX(1);
+}
+
+.link[aria-current="true"] {
+  color: var(--nav-accent);
+}
+
+.link[aria-current="true"]::after {
+  transform: scaleX(1);
+}
+
+/* ── The action ───────────────────────────────────────────────────────────
+   Deliberately quieter than the hero's filled CTA — an outline that fills on
+   hover, not a second competing button. It only has to be unmissable once the
+   hero has gone. */
+.action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--sp-5);
+  border: var(--hairline) solid currentColor;
+  border-radius: var(--r-pill);
+  color: var(--nav-ink);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+.action:hover,
+.action:focus-visible {
+  background: var(--nav-accent);
+  border-color: var(--nav-accent);
+  color: var(--c-earth);
+}
+
+/* ── Per-scene ink ────────────────────────────────────────────────────────
+   Five paintings, two answers. The hero, mountains and night sky are dark
+   enough for cream type; the cloud sea and the light rays are not, and take
+   the dark ink instead. Set on the element by Nav.tsx from the framed scene. */
+.nav[data-ink="light"] {
+  --nav-ink: var(--ink-light);
+  --nav-ink-dim: rgb(var(--rgb-cream) / 0.72);
+  --nav-scrim: rgb(var(--rgb-earth) / 0.66);
+  --nav-accent: var(--c-lift);
+  /* A halo in the opposite direction to the ink. Belt and braces for the
+     moment mid-crossfade when the painting behind the bar is neither one scene
+     nor the other and no single ink colour is correct. */
+  --nav-halo: 0 1px 10px rgb(var(--rgb-earth) / 0.6);
+}
+
+.nav[data-ink="dark"] {
+  --nav-ink: var(--ink-dark);
+  --nav-ink-dim: rgb(var(--rgb-earth) / 0.72);
+  --nav-scrim: rgb(255 255 255 / 0.5);
+  --nav-halo: 0 1px 10px rgb(255 255 255 / 0.75);
+  /* The mint accent is designed to glow against dark paintings; over the cloud
+     sea and the light rays it all but disappears, so the deep teal takes the
+     "you are here" job instead. */
+  --nav-accent: var(--c-deep-teal);
+}
+
+/* ── Narrow screens ───────────────────────────────────────────────────────
+   No hamburger. With short labels, Home dropped (the wordmark is already the
+   link home) and the type tightened, four items plus the Contact action fit
+   down to 360px — measured, not assumed. A menu button for four links is a
+   worse experience, not a smaller one. */
+@media (max-width: 640px) {
+  .nav {
+    --nav-h: 66px;
+    --nav-h-scrolled: 56px;
+  }
+
+  /* Short labels below this width — see NAV_LINKS in content/site.ts. */
+  .labelFull {
+    display: none;
+  }
+
+  .labelShort {
+    display: inline;
+  }
+
+  /* Home goes, so the Contact action fits. The wordmark is already the link
+     home — that is the convention, and it is the one nav item a visitor will
+     look for in the top-left without being told. */
+  .links li[data-nav-id="home"] {
+    display: none;
+  }
+
+  .links {
+    gap: var(--sp-2);
+  }
+
+  .link,
+  .action {
+    font-size: 0.74rem;
+    letter-spacing: 0.01em;
+  }
+
+  .link {
+    padding-inline: var(--sp-1);
+  }
+
+  .action {
+    padding-inline: var(--sp-3);
+    letter-spacing: 0.02em;
+  }
+
+  .wordmark {
+    font-size: 0.9rem;
+    letter-spacing: 0.03em;
+  }
+
+  .inner {
+    gap: var(--sp-3);
+    padding-inline: var(--sp-4);
+  }
+
+  /* On a phone the two ends are already nearly touching, so the convergence
+     is a hint rather than a move. */
+  .nav {
+    --nav-converge: 0.35rem;
+  }
+}
+
+/* The tightest the bar gets. Measured: a 360px viewport overflowed the inner
+   row by 29px before this block, and a 390px one by 2px. Every value here is
+   claiming back a few of those pixels — if you add a sixth nav item, this is
+   the width that will break first, so check it. */
+@media (max-width: 430px) {
+  .wordmark {
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+  }
+
+  .link,
+  .action {
+    font-size: 0.7rem;
+  }
+
+  .action {
+    padding-inline: var(--sp-2);
+  }
+
+  .links {
+    gap: var(--sp-1);
+  }
+
+  .inner {
+    gap: var(--sp-2);
+    padding-inline: var(--sp-3);
+  }
+}
