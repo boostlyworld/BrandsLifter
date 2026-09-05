@@ -174,6 +174,19 @@ measuring anything, or you will record a page that has not hydrated.
 - Check `prefers-reduced-motion: reduce` renders a complete site: no
   `.pin-spacer`, zero `<canvas>`, the static `img[src="/balloon.png"]` present.
 
+## Version control
+
+The working copy is pushed to GitHub automatically. A Stop hook in
+`.claude/settings.json` runs `scripts/auto-push.mjs` when a turn ends: it stages
+everything, makes one commit naming the files that moved, and pushes. So there
+is normally no need to commit by hand, and the tree is normally clean.
+
+It only ever adds — no pull, rebase, reset, force or amend — so it cannot lose
+work or rewrite pushed history. Nothing to commit, no remote, or no network all
+exit quietly; a failed push is reported and the commit is left safe locally.
+
+To pause it, remove the hook from `.claude/settings.json`, or use `/hooks`.
+
 ## Known limitation
 
 The source paintings are 1376×768 and go soft when stretched full-bleed on a
