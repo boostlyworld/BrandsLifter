@@ -17,6 +17,17 @@ export const scrollProgress = {
    * pixels keeps every downstream number stable.
    */
   section: 0,
+  /**
+   * Where the scrollbar actually is, in the same coordinate. `section` chases
+   * this rather than being set to it: the whole narrative — crossfades, the
+   * balloon, the Services reveal — is eased toward the scrollbar instead of
+   * tracking it 1:1, so it keeps moving for a few frames after a wheel notch
+   * stops rather than halting with it.
+   *
+   * Only components/stage/Stage.tsx should write either of these. Everything
+   * downstream reads `section` and inherits the easing for free.
+   */
+  sectionRaw: 0,
   /** Journey position for the balloon, 0–1. Derived from `section`. */
   journey: 0,
   /**
@@ -47,6 +58,16 @@ export type SectionId = (typeof SECTION_IDS)[number];
 
 /** Linear interpolation. */
 export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+/**
+ * A per-frame lerp rate, corrected for how long the frame actually took.
+ *
+ * `lerp(a, b, 0.12)` every frame is not one speed, it is one speed per display:
+ * a 120Hz screen applies it twice as often and arrives twice as fast. This
+ * converts a rate that means "0.12 at 60fps" into the fraction to use for a
+ * frame of `dt` seconds, so the motion feels the same on every machine.
+ */
+export const damp = (rate: number, dt: number) => 1 - Math.pow(1 - rate, dt * 60);
 
 /** Clamp to a range. */
 export const clamp = (v: number, min = 0, max = 1) =>

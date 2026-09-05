@@ -86,13 +86,29 @@ These each cost real time to rediscover:
 - **The crossfade is keyed to the incoming section's arrival** (`XFADE_ENTER` /
   `XFADE_SETTLE`), not to a fraction of the outgoing section. About is one
   viewport on desktop and ~1.5 on a phone; keyed to a fraction, the sky finished
-  turning while that section's own copy was still mid-screen.
+  turning while that section's own copy was still mid-screen. `XFADE_HOLD` is the
+  floor under that: the hero's span IS one viewport, so `ENTER` alone put its
+  handover at scroll 0 and the sky began turning on the first pixel.
+- **The journey is damped, not tracked.** `scrollProgress.section` chases
+  `sectionRaw` (`SCROLL_DAMPING` in `Stage.tsx`), so everything downstream eases.
+  The balloon's own `FOLLOW_LERP` is the second filter in that chain and was
+  retuned against it — change one and change the other, or the balloon's lag
+  doubles.
 - **Copy scrims must reach transparent inside their own box.** `.content::before`
   in Hero, `.intro::before` / `.marks::before` in About. Size the element
   generously and keep the gradient's transparent stop well inside it — a
   gradient still opaque at the element's edge draws a hard horizontal band
   across the painting. This is the trap in this codebase most likely to be
   reintroduced.
+- **Measure the nav bar with `offset*`, not `getBoundingClientRect()`.** The bar
+  translates off the top of the screen over the footer, and a rect taken during
+  that transition reports a negative top and parks the glass there — the bar
+  comes back on the way up and its glass does not.
+- **A section's glass is only visible while its section is.** The lens and pane
+  are fixed elements on `<body>`, positioned by a loop that stops when the
+  section leaves; whatever position they last had is where they stay. Scroll up
+  from the testimonials fast enough and the contact card's pane is left sitting
+  on the hero.
 - **The balloon's corridor is a contract between two files.** `BALLOON_PATH` x
   values and the `width` caps on `About .marks` and `Services .ledger` are tuned
   against each other. Widen either content block and the balloon starts crossing
@@ -113,17 +129,23 @@ These each cost real time to rediscover:
 
 ### The three libraries
 
-Each solves one problem and is used in one place:
+Each solves one problem:
 
 - **react-three-fiber** (`components/stage/Balloon.tsx`) — one textured plane.
   Idle bob, sway and lagging tilt run continuously in `useFrame`; the flight path
   is chased with a lerp so it lags the scrollbar. No React state, no re-renders
   after mount. The canvas unmounts entirely once the balloon leaves the story.
-- **liquid-glass-js** (`components/nav/GlassSurface.tsx`) — the scrolled nav
-  only. The library appends its own fixed elements to `<body>` and positions them
-  in screen coordinates, so the component renders `null` and just measures the
-  nav. Falls back to CSS `backdrop-filter` under 900px, under reduced motion, or
-  on import failure.
+- **liquid-glass-js** — three surfaces: the scrolled nav (`nav/GlassSurface`),
+  the contact card and the open testimonial (`sections/SectionGlass`). Their
+  optical parameters are one shared material in `lib/glassMaterial.ts`. The
+  library appends its own fixed elements to `<body>` and positions them in
+  screen coordinates, so both components render `null` and just measure their
+  target — which is also why the library only ever supplies the *refraction*
+  here. Its rim and bloom are a uniform box-shadow on an element behind the
+  surface, half a frame out of date while the page scrolls; the real rim, sheen
+  and bloom are the `--lg3-*` tokens in `globals.css`, drawn on the real
+  elements. Falls back to CSS `backdrop-filter` under 900px, under reduced
+  motion, or on import failure.
 - **@shadergradient/react** (`components/sections/RayGlow.tsx`) — the glow behind
   the testimonials only. It bundles its own copy of three.js, so it is
   `next/dynamic` with `ssr: false` plus its own lazy-load observer, and blended
@@ -139,6 +161,7 @@ GSAP is likewise imported on demand, and only when motion is allowed.
 | `lib/balloonPath.ts` | Flight path, idle float, mobile behaviour, exit |
 | `content/site.ts` | Every string on the site |
 | `components/stage/scenes.ts` | Scene↔section mapping, crops, washes, crossfade |
+| `lib/glassMaterial.ts` | The glass: refraction, frost, specular, tint |
 
 The palette was sampled pixel-by-pixel from the supplied paintings in `Scenes/`.
 The comment on each token says which part of which painting it came from —

@@ -172,3 +172,31 @@ export const SCENES: Scene[] = [
    rendered backdrop partway through before shipping it. */
 export const XFADE_ENTER = 1.0;
 export const XFADE_SETTLE = 0.08;
+
+/**
+ * The floor under ENTER: how much of a section's OWN span it holds its sky
+ * before the handover is allowed to start, as a fraction of that span.
+ *
+ * ENTER alone has a hole in it, and the hero falls straight through it. ENTER
+ * reaches back one viewport from the incoming section's top edge — but the hero
+ * and About are both `min-height: 100svh`, so their measured tops are exactly
+ * one viewport apart, and `nextTop - vh * 1.0` lands on zero. The sky therefore
+ * began turning at the first pixel of scroll: measured on a 695px viewport, the
+ * hero was down to 0.55 opacity by y = 300, with its own copy still mid-screen.
+ * Coming back up it re-formed over the mountains, and because the hero's hill is
+ * far closer than the mountains' recessed one, the picture read as cropping in.
+ *
+ * Keyed to the section's own span rather than to a viewport, this only bites
+ * where the span IS a viewport — which is the hero and nothing else. About,
+ * Services and Testimonials measured 862 / 1401 / 902px against a 695px
+ * viewport, so their starts are unchanged and the long dissolve argued for
+ * above is preserved everywhere it already existed.
+ */
+export const XFADE_HOLD = 0.35;
+
+/**
+ * The shortest a dissolve may be, in viewports. Only reachable if HOLD and
+ * SETTLE are pushed until they cross; it stops that from becoming a hard cut
+ * rather than being a knob worth turning.
+ */
+export const XFADE_MIN = 0.15;

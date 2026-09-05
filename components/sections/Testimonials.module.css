@@ -158,7 +158,14 @@
 
 /* A ring, not a filled bubble: the quote should feel like it is written on the
    air in front of the light. Closed, it is exactly the avatar's size and hidden
-   underneath it; open, it is the full circle with the review inside. */
+   underneath it; open, it is the full circle with the review inside.
+
+   The rim, sheen and bloom are the shared --lg3-* tokens (globals.css) — a
+   conic rim works under border-radius: 50% unchanged, so this is the same
+   material as the contact card and the nav bar with nothing special done to it.
+   Note that the border must stay transparent for the rim to show, which is why
+   the open and hover states below are rings in the box-shadow rather than the
+   border-color changes they used to be. */
 .circle {
   position: absolute;
   top: 50%;
@@ -178,8 +185,12 @@
   padding: calc(var(--open) * 0.32) calc(var(--open) * 0.14)
     calc(var(--open) * 0.13);
   border-radius: 50%;
-  border: var(--hairline) solid rgb(var(--rgb-earth) / 0.24);
-  background: rgb(255 255 255 / 0.1);
+  border: var(--hairline) solid transparent;
+  background:
+    linear-gradient(rgb(255 255 255 / 0.14), rgb(255 255 255 / 0.14)) padding-box,
+    var(--lg3-sheen) padding-box,
+    var(--lg3-rim) border-box;
+  box-shadow: var(--lg3-inner), var(--lg3-bloom);
   text-align: center;
   opacity: 0;
   pointer-events: none;
@@ -187,8 +198,7 @@
   transition:
     width var(--dur-expand) var(--ease-out),
     height var(--dur-expand) var(--ease-out),
-    opacity var(--dur-expand) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out);
+    opacity var(--dur-expand) var(--ease-out);
 }
 
 .slot[data-open="true"] .circle {
@@ -196,19 +206,18 @@
   height: var(--open);
   opacity: 1;
   pointer-events: auto;
-  border-color: rgb(var(--rgb-cream) / 0.5);
 }
 
 /* Fallback surface. The real lens is a liquid-glass-js pane sitting behind the
-   section; when it is not running, this stands in for it — the same frost and
-   the same lift, without the refraction. */
+   section; when it is not running, this stands in for it — the same rim, sheen
+   and bloom, frosted in CSS, without the refraction. */
 .testimonials[data-glass="css"] .circle {
-  background: rgb(255 255 255 / 0.26);
+  background:
+    linear-gradient(rgb(255 255 255 / 0.3), rgb(255 255 255 / 0.3)) padding-box,
+    var(--lg3-sheen) padding-box,
+    var(--lg3-rim) border-box;
   backdrop-filter: blur(18px) saturate(1.35);
   -webkit-backdrop-filter: blur(18px) saturate(1.35);
-  box-shadow:
-    inset 0 1px 0 0 rgb(255 255 255 / 0.5),
-    0 30px 70px -40px rgb(var(--rgb-earth) / 0.7);
 }
 
 .quote {
@@ -218,6 +227,8 @@
   line-height: 1.36;
   color: var(--ink-dark);
   text-wrap: balance;
+  /* lg3's glowing type, inverted for dark ink over a bright painting. */
+  text-shadow: var(--glow-on-light);
 }
 
 /* Fades a beat behind the circle so the review arrives in a finished shape
@@ -278,6 +289,9 @@
   translate: -50% calc(-50% - var(--open) * 0.335);
 }
 
+/* The same glass, at the smallest size it appears on the site. A portrait sits
+   inside it, so the wash under the sheen is heavier than the circle's — the rim
+   still has to read against a face as well as against the sky. */
 .disc {
   display: grid;
   place-items: center;
@@ -285,9 +299,12 @@
   height: 100%;
   overflow: hidden;
   border-radius: 50%;
-  border: var(--hairline) solid rgb(var(--rgb-cream) / 0.75);
-  background: rgb(var(--rgb-cream) / 0.42);
-  box-shadow: 0 10px 24px -16px rgb(var(--rgb-earth) / 0.9);
+  border: var(--hairline) solid transparent;
+  background:
+    linear-gradient(rgb(var(--rgb-cream) / 0.42), rgb(var(--rgb-cream) / 0.42)) padding-box,
+    var(--lg3-sheen) padding-box,
+    var(--lg3-rim) border-box;
+  box-shadow: var(--lg3-inner), 0 10px 24px -16px rgb(var(--rgb-earth) / 0.9);
   font-family: var(--ff-display);
   font-size: 1.05rem;
   letter-spacing: 0.14em;
@@ -296,17 +313,24 @@
   text-indent: 0.14em;
   color: var(--c-deep-teal);
   transition:
-    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
     scale var(--dur-expand) var(--ease-out);
+}
+
+/* Open and hover used to be a border-color change; the border is transparent
+   now so the conic rim can show through it, so the state is a ring added to the
+   shadow instead. Drawn inset, so it lands just inside the rim rather than
+   pushing a second edge outside it. */
+.slot[data-open="true"] .disc,
+.trigger:hover .disc {
+  box-shadow:
+    var(--lg3-inner),
+    inset 0 0 0 var(--hairline) rgb(var(--rgb-deep-teal) / 0.75),
+    0 10px 24px -16px rgb(var(--rgb-earth) / 0.9);
 }
 
 .slot[data-open="true"] .disc {
   scale: 0.62;
-  border-color: var(--c-deep-teal);
-}
-
-.trigger:hover .disc {
-  border-color: var(--c-deep-teal);
 }
 
 .photo {
@@ -373,9 +397,13 @@
     padding: var(--sp-5);
     text-align: left;
     justify-items: start;
+    /* No ring at this width: these are quote cards with a rule, not circles, so
+       the conic rim and its transparent border are unwound rather than
+       stretched around a rectangle nothing refracts. */
     border: 0;
     border-left: 2px solid rgb(var(--rgb-deep-teal) / 0.5);
     background: rgb(255 255 255 / 0.2);
+    box-shadow: none;
   }
 
   .quote,

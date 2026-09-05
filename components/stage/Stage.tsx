@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { BALLOON_EXIT, JOURNEY_SPAN } from "@/lib/balloonPath";
 import {
   clamp,
+  damp,
+  lerp,
   SECTION_IDS,
   scrollProgress,
   smoothRamp,
@@ -14,7 +16,13 @@ import { useReducedMotion } from "@/lib/useReducedMotion";
 
 import { BalloonCanvas } from "./BalloonCanvas";
 import { SceneBackdrop } from "./SceneBackdrop";
-import { SCENES, XFADE_ENTER, XFADE_SETTLE } from "./scenes";
+import {
+  SCENES,
+  XFADE_ENTER,
+  XFADE_HOLD,
+  XFADE_MIN,
+  XFADE_SETTLE,
+} from "./scenes";
 import styles from "./Stage.module.css";
 
 /* ── Tuning ─────────────────────────────────────────────────────────────────
@@ -39,6 +47,19 @@ const SERVICES_PAN_WINDOW = { start: 0.07, span: 0.205 };
 
 /** A little past the balloon's fade-out, the canvas stops rendering. */
 const BALLOON_UNMOUNT_AT = BALLOON_EXIT.fadeEnd + 0.15;
+
+/**
+ * How hard the journey chases the scrollbar each frame, at 60fps.
+ *
+ * The whole narrative runs on one number, so damping it here is the one place
+ * that makes the sky, the balloon and the Services reveal all ease rather than
+ * step. Lower is floatier; too low and the sky is visibly still catching up
+ * after the page has stopped. 0.12 keeps roughly a fifth of a second of follow.
+ */
+const SCROLL_DAMPING = 0.12;
+
+/** Close enough to stop animating and park the loop, in section space. */
+const SETTLED = 0.0005;
 
 export type StageProps = {
   /** Fires when the framed section changes, so the nav can recolour itself. */
@@ -84,6 +105,7 @@ export function Stage({ onSceneChange }: StageProps) {
 
     // The balloon stays parked in the hero; it simply never travels.
     scrollProgress.section = 0;
+    scrollProgress.sectionRaw = 0;
     scrollProgress.journey = 0;
 
     const observer = new IntersectionObserver(
@@ -124,6 +146,9 @@ export function Stage({ onSceneChange }: StageProps) {
       /** Document-space top of each section. Re-read after every layout. */
       let tops: number[] = [];
 
+      /** The last opacity written for each scene, so it is not written twice. */
+      const painted: string[] = SCENES.map(() => "");
+
       const measure = () => {
         tops = sections.map((el) => {
           if (!el) return 0;
@@ -156,10 +181,29 @@ export function Stage({ onSceneChange }: StageProps) {
         return tops.length - 1;
       };
 
-      const update = () => {
-        const y = window.scrollY;
-        const s = toSectionSpace(y);
-        scrollProgress.section = s;
+      /**
+       * Section space → raw scroll position. The inverse of the above, and the
+       * reason it is needed: the damped `section` below is the value everything
+       * downstream runs on, but the crossfade is written in pixels — distances
+       * back from a section's top edge. Converting the damped position back into
+       * pixels lets the dissolve be eased along with everything else without
+       * restating any of its tuning in another coordinate.
+       */
+      const fromSectionSpace = (s: number) => {
+        if (tops.length === 0) return 0;
+        if (s <= 0) return tops[0];
+        if (s >= tops.length - 1) return tops[tops.length - 1];
+        const i = Math.floor(s);
+        return tops[i] + (tops[i + 1] - tops[i]) * (s - i);
+      };
+
+      /**
+       * Everything that follows the journey, drawn from the DAMPED position.
+       * Called from the animation loop, never from the scroll event directly.
+       */
+      const render = () => {
+        const s = scrollProgress.section;
+        const y = fromSectionSpace(s);
         scrollProgress.journey = clamp(s / JOURNEY_SPAN);
 
         /* Ride the services camera. Same window as the CSS, converted to the
@@ -176,28 +220,48 @@ export function Stage({ onSceneChange }: StageProps) {
 
            The window is measured against the *incoming* section's arrival on
            screen, not as a fraction of the outgoing section's height. See the
-           note on XFADE_ENTER in scenes.ts for why. */
-        const index = Math.min(SCENES.length - 1, Math.floor(s));
+           note on XFADE_ENTER in scenes.ts for why — and the note on XFADE_HOLD
+           for why `start` also has a floor under it. */
+        const index = Math.min(SCENES.length - 1, Math.max(0, Math.floor(s) || 0));
         const nextTop = tops[index + 1];
         const vh = window.innerHeight;
-        const handover =
-          nextTop === undefined
-            ? 0
-            : smoothRamp(
-                y,
-                nextTop - vh * XFADE_ENTER,
-                nextTop - vh * XFADE_SETTLE
-              );
 
+        let handover = 0;
+        if (nextTop !== undefined) {
+          const span = nextTop - tops[index];
+          const start = Math.max(
+            nextTop - vh * XFADE_ENTER,
+            tops[index] + span * XFADE_HOLD
+          );
+          const end = Math.max(
+            start + vh * XFADE_MIN,
+            nextTop - vh * XFADE_SETTLE
+          );
+          handover = smoothRamp(y, start, end);
+        }
+
+        /* Only write a scene variable that has actually changed.
+           These are not ordinary custom properties: liquid-glass-js refracts a
+           CLONE of the backdrop, the clone inherits them, and touching one makes
+           the browser re-run a full-viewport SVG displacement filter over five
+           cloned paintings — once per live lens, of which there are three. Away
+           from a boundary four of these are already 0 and the fifth is already
+           1, so this turns most frames of a scroll into no work at all for the
+           glass. Worth the six lines. */
         SCENES.forEach((scene, i) => {
           const o = i === index ? 1 - handover : i === index + 1 ? handover : 0;
-          root.style.setProperty(scene.cssVar, o.toFixed(4));
+          const next = o.toFixed(4);
+          if (painted[i] === next) return;
+          painted[i] = next;
+          root.style.setProperty(scene.cssVar, next);
         });
 
         /* Nav contrast follows the crossfade rather than the section boundary:
            the nav has to recolour when the painting behind it changes, which is
            the moment the handover passes halfway — not the moment the next
-           section's top edge crosses the fold. */
+           section's top edge crosses the fold. Reading the damped handover and
+           not the raw scrollbar is the same argument continued: the ink has to
+           agree with the painting, and the painting is what is being eased. */
         const framed = SECTION_IDS[handover > 0.5 ? index + 1 : index];
         if (framed && framed !== sceneRef.current) {
           sceneRef.current = framed;
@@ -211,6 +275,77 @@ export function Stage({ onSceneChange }: StageProps) {
           balloonMountedRef.current = shouldMount;
           setBalloonMounted(shouldMount);
         }
+      };
+
+      /* ── The damping loop ──────────────────────────────────────────────────
+         `section` chases `sectionRaw` instead of being assigned it, so the sky,
+         the balloon and the Services reveal ease toward the scrollbar rather
+         than tracking every notch of it.
+
+         It parks itself the moment the two agree to within SETTLED and is woken
+         by the next scroll, so a still page costs nothing — which matters here,
+         because this loop is not alone: the balloon's useFrame and one
+         requestAnimationFrame per liquid-glass surface are also live. */
+      let frame = 0;
+      let last = 0;
+
+      const tick = (now: number) => {
+        /* dt comes from the frame timestamps and nothing else.
+           Seeding `last` with performance.now() when the loop is woken looks
+           equivalent and is not: a scroll event is dispatched partway through a
+           frame, so the NEXT frame's timestamp can precede it. That makes dt
+           negative, which makes the damping factor negative, which walks the
+           value AWAY from the scrollbar — and one step past zero is enough to
+           index the scene table out of bounds and write NaN into a scene
+           opacity. Skipping the first frame costs one frame of easing.
+
+           The upper clamp is a different case: a backgrounded tab comes back
+           with a dt of several seconds, and damping that is just a jump. */
+        const dt = last === 0 ? 0 : Math.min(0.1, Math.max(0, (now - last) / 1000));
+        last = now;
+
+        const raw = scrollProgress.sectionRaw;
+        scrollProgress.section = lerp(
+          scrollProgress.section,
+          raw,
+          damp(SCROLL_DAMPING, dt)
+        );
+
+        if (Math.abs(raw - scrollProgress.section) < SETTLED) {
+          scrollProgress.section = raw;
+          frame = 0;
+          render();
+          return;
+        }
+
+        render();
+        frame = requestAnimationFrame(tick);
+      };
+
+      const wake = () => {
+        if (frame !== 0) return;
+        last = 0; // seeded from the first frame's own timestamp — see tick()
+        frame = requestAnimationFrame(tick);
+      };
+
+      /** The scroll callback. Records where the scrollbar is; the loop follows. */
+      const update = () => {
+        scrollProgress.sectionRaw = toSectionSpace(window.scrollY);
+        wake();
+      };
+
+      /**
+       * Land on the current position outright, without easing into it. Used on
+       * mount and after every layout change — easing in from wherever the last
+       * layout put us would read as the page drifting on its own.
+       */
+      const settle = () => {
+        scrollProgress.sectionRaw = toSectionSpace(window.scrollY);
+        scrollProgress.section = scrollProgress.sectionRaw;
+        cancelAnimationFrame(frame);
+        frame = 0;
+        last = 0;
+        render();
       };
 
       /* How far the Services camera has to travel for its last row to clear the
@@ -282,16 +417,17 @@ export function Stage({ onSceneChange }: StageProps) {
       const onRefresh = () => {
         measure();
         measureServicesPan();
-        update();
+        settle();
       };
       ScrollTrigger.addEventListener("refresh", onRefresh);
 
       measure();
-      update();
+      settle();
       ScrollTrigger.refresh();
 
       cleanup = () => {
         ScrollTrigger.removeEventListener("refresh", onRefresh);
+        cancelAnimationFrame(frame);
         driver.kill();
         mm.revert();
       };

@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useCallback, useState } from "react";
 
 import { Nav } from "@/components/nav/Nav";
@@ -11,19 +10,6 @@ import { Services } from "@/components/sections/Services";
 import { Testimonials } from "@/components/sections/Testimonials";
 import { Stage } from "@/components/stage/Stage";
 import type { SectionId } from "@/lib/scrollProgress";
-
-/**
- * Live controls for the testimonials' liquid glass, in development only.
- *
- * The conditional around dynamic() is what actually keeps it out of the
- * production bundle: `process.env.NODE_ENV` is substituted at build time, so
- * the import() below is unreachable and never becomes a chunk. A plain
- * top-level import behind the same check would still be bundled.
- */
-const GlassTuner =
-  process.env.NODE_ENV === "development"
-    ? dynamic(() => import("@/components/dev/GlassTuner"), { ssr: false })
-    : () => null;
 
 /**
  * The whole site.
@@ -62,8 +48,6 @@ export default function Home() {
       </main>
 
       <Footer />
-
-      <GlassTuner />
     </>
   );
 }

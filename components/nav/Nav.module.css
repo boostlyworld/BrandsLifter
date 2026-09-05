@@ -16,10 +16,25 @@
   color: var(--nav-ink);
   /* The ink swap is a legibility mechanism, not a flourish — it runs at the
      same speed as the links so the two never disagree about which scene is
-     behind them. Only the height eases on the slower nav timing. */
+     behind them. Only the height and the retreat over the footer ease on the
+     slower nav timing. */
   transition:
     height var(--dur-nav) var(--ease-out),
+    transform var(--dur-nav) var(--ease-out),
+    opacity var(--dur-nav) var(--ease-out),
     color var(--dur-fast) var(--ease-out);
+}
+
+/* ── Standing down over the footer ────────────────────────────────────────
+   The footer prints the wordmark across the full width and lists the same four
+   sections this bar does, so over it the bar is duplication laid across the top
+   of the night sky. It leaves rather than competing. Nav.tsx also marks the
+   header `inert` while this is set, so it is not a tab stop off the top of the
+   screen — and the glass goes with it. */
+.nav[data-hidden="true"] {
+  transform: translateY(-110%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* A soft wash under the bar. It is what makes the wordmark readable over the
@@ -41,9 +56,50 @@
   transition: opacity var(--dur-nav) var(--ease-out);
 }
 
-/* Scrolled: the bar tightens and the glass takes over the legibility job. */
+/* ── The bottom lip ───────────────────────────────────────────────────────
+   lg3's ring, reduced to the one edge you can actually see. The bar is
+   full-bleed, so its left and right bezels are off screen and its top edge is
+   the top of the window; all that is left is the lower rim, and a conic
+   gradient around a shape with three invisible sides is wasted. So the ring
+   becomes a horizontal one — bright where the specular arc falls, near gone
+   between — running out to nothing at both gutters so it never reads as a rule
+   ruled across the page.
+
+   The refraction underneath is liquid-glass-js's (components/nav/GlassSurface),
+   and this is deliberately drawn on the bar itself rather than on the library's
+   pane: the pane is positioned in screen coordinates a frame behind, and its
+   edge and this one would visibly disagree while scrolling. */
+.nav::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: var(--hairline);
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgb(255 255 255 / 0.04) 0%,
+    rgb(255 255 255 / 0.62) 22%,
+    rgb(255 255 255 / 0.2) 52%,
+    rgb(255 255 255 / 0.75) 82%,
+    rgb(255 255 255 / 0.05) 100%
+  );
+  transition: opacity var(--dur-nav) var(--ease-out);
+}
+
+/* Scrolled: the bar tightens, the lip lights up and the glass takes over the
+   legibility job. The bloom is lg3's, trimmed — a full-width strip that throws
+   light in every direction is a glowing band, not a pane of glass, so only the
+   downward half of --lg3-bloom is kept. */
 .nav[data-scrolled="true"] {
   height: var(--nav-h-scrolled);
+  box-shadow:
+    0 0 30px -14px rgb(255 255 255 / 0.28),
+    0 18px 40px -34px rgb(var(--rgb-night) / 0.6);
+}
+
+.nav[data-scrolled="true"]::after {
+  opacity: 1;
 }
 
 .nav[data-scrolled="true"]::before {
@@ -53,18 +109,18 @@
 /* CSS fallback for the glass: used on narrow screens, under reduced motion, and
    if liquid-glass-js cannot start. Visually quieter than the real thing, but it
    has to do the same job — the bar is only 56px tall on a phone, and section
-   headings scrolling underneath it were still legible through a lighter tint. */
+   headings scrolling underneath it were still legible through a lighter tint.
+   The lip and the bloom above are unconditional, so the two modes are the same
+   material with and without the refraction. */
 .nav[data-glass="css"][data-scrolled="true"] {
   background: rgb(var(--rgb-deep-teal) / 0.62);
   backdrop-filter: blur(20px) saturate(1.3);
   -webkit-backdrop-filter: blur(20px) saturate(1.3);
-  box-shadow: inset 0 -1px 0 0 rgb(var(--rgb-cream) / 0.14);
 }
 
 /* Over the two bright scenes the fallback tints light instead of dark. */
 .nav[data-glass="css"][data-scrolled="true"][data-ink="dark"] {
   background: rgb(253 245 235 / 0.72);
-  box-shadow: inset 0 -1px 0 0 rgb(var(--rgb-earth) / 0.16);
 }
 
 .inner {
@@ -222,17 +278,21 @@
   --nav-ink-dim: rgb(var(--rgb-cream) / 0.72);
   --nav-scrim: rgb(var(--rgb-earth) / 0.66);
   --nav-accent: var(--c-lift);
-  /* A halo in the opposite direction to the ink. Belt and braces for the
-     moment mid-crossfade when the painting behind the bar is neither one scene
-     nor the other and no single ink colour is correct. */
-  --nav-halo: 0 1px 10px rgb(var(--rgb-earth) / 0.6);
+  /* lg3's glowing type, over the three dark paintings where a bloom reads. It
+     doubles as the halo that carries the bar through the moment mid-crossfade
+     when the painting behind it is neither one scene nor the other and no
+     single ink colour is correct. */
+  --nav-halo: var(--glow-on-dark);
 }
 
 .nav[data-ink="dark"] {
   --nav-ink: var(--ink-dark);
   --nav-ink-dim: rgb(var(--rgb-earth) / 0.72);
   --nav-scrim: rgb(255 255 255 / 0.5);
-  --nav-halo: 0 1px 10px rgb(255 255 255 / 0.75);
+  /* The bloom inverted: over the cloud sea and the light rays a white glow
+     around cream letters would be invisible, so it becomes a light halo pushed
+     out behind dark ink instead. Same mechanism, opposite direction. */
+  --nav-halo: var(--glow-on-light);
   /* The mint accent is designed to glow against dark paintings; over the cloud
      sea and the light rays it all but disappears, so the deep teal takes the
      "you are here" job instead. */

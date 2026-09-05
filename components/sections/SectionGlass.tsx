@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { LiquidGlass as LiquidGlassClass } from "liquid-glass-js";
 
-import { getGlassSettings, subscribeGlass } from "@/lib/glassSettings";
+import { GLASS_PANEL } from "@/lib/glassMaterial";
 import { glassElements } from "@/lib/liquidGlassElements";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 
@@ -95,6 +95,16 @@ export function SectionGlass({
   const [wideEnough, setWideEnough] = useState(false);
   const [ready, setReady] = useState(false);
 
+  /* Whether the section is on screen at all.
+     Not only an optimisation. The lens and its pane are fixed elements on
+     <body>, positioned by the loop below — and the loop stops when the section
+     leaves, which freezes them wherever they last were. Scroll up from the
+     testimonials quickly enough and the contact card's pane is left parked over
+     the hero, a rectangle of frost and refraction sitting on a painting it has
+     nothing to do with. So being on screen is part of being visible, not just
+     part of being worth updating. */
+  const [onScreen, setOnScreen] = useState(false);
+
   /* Last size the displacement map was built for. Kept across renders so the
      loop can tell a genuine resize from the 60 frames a second where nothing
      about the target's geometry has changed. */
@@ -163,7 +173,7 @@ export function SectionGlass({
         if (!background) throw new Error("glass background missing");
 
         glass = new LiquidGlass({
-          ...getGlassSettings(),
+          ...GLASS_PANEL,
           background,
           width: 1,
           height: 1,
@@ -174,11 +184,10 @@ export function SectionGlass({
           draggable: false, // it is a panel on a page, not a toy
         });
 
-        /* The library ships one heavy drop shadow meant for a small floating
-           panel, and globals.css replaces it with the nav bar's hairline. These
-           are neither, so they opt out of that override by name. */
+        /* Start hidden and stay untouchable. The pane is only here for its
+           frost and tint — its rim and bloom are drawn on the real element by
+           the --lg3-* tokens in globals.css, which strips the library's own. */
         glassElements(glass).forEach((el) => {
-          el.classList.add("lqg-section");
           el.style.opacity = "0";
           el.style.pointerEvents = "none";
         });
@@ -204,29 +213,6 @@ export function SectionGlass({
     };
   }, [reduced, failed, wideEnough, backgroundSelector, onModeChange, aim]);
 
-  /* Follow the optical settings while they are being tuned.
-     `set()` regenerates the displacement map, which is far too much work to do
-     synchronously on every input event of a dragged slider — so changes are
-     collapsed into the next frame. In a production build nothing ever calls
-     setGlassSettings and this listener never fires. */
-  useEffect(() => {
-    if (!ready) return;
-    let frame = 0;
-
-    const unsubscribe = subscribeGlass((params) => {
-      if (frame) return;
-      frame = requestAnimationFrame(() => {
-        frame = 0;
-        glassRef.current?.set(params);
-      });
-    });
-
-    return () => {
-      cancelAnimationFrame(frame);
-      unsubscribe();
-    };
-  }, [ready]);
-
   /* Glue the glass to its target for as long as the section is on screen. */
   useEffect(() => {
     if (!ready) return;
@@ -244,6 +230,7 @@ export function SectionGlass({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
+        setOnScreen(entry.isIntersecting);
         if (entry.isIntersecting && !running) {
           running = true;
           tick();
@@ -260,6 +247,7 @@ export function SectionGlass({
       running = false;
       cancelAnimationFrame(frame);
       observer.disconnect();
+      setOnScreen(false);
     };
   }, [ready, sectionRef, aim]);
 
@@ -269,6 +257,8 @@ export function SectionGlass({
     const glass = glassRef.current;
     if (!glass || !ready) return;
 
+    const visible = active && onScreen;
+
     const show = () => {
       /* Re-aim first: the target may have moved, or may not have existed when
          the lens was built. If there is still nothing to aim at, stay hidden
@@ -276,17 +266,17 @@ export function SectionGlass({
       const placed = aim(glass);
       glassElements(glass).forEach((el) => {
         el.style.transition = "opacity 320ms var(--ease-out)";
-        el.style.opacity = active && placed ? "1" : "0";
+        el.style.opacity = visible && placed ? "1" : "0";
       });
     };
 
-    if (!active || showDelay === 0) {
+    if (!visible || showDelay === 0) {
       show();
       return;
     }
     const timer = window.setTimeout(show, showDelay);
     return () => window.clearTimeout(timer);
-  }, [active, ready, showDelay, aim]);
+  }, [active, onScreen, ready, showDelay, aim]);
 
   return null;
 }

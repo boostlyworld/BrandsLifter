@@ -30,7 +30,7 @@ Two more, less often:
 | File | Owns |
 |---|---|
 | `components/stage/scenes.ts` | Which painting belongs to which section, how each is cropped on desktop and on mobile, its legibility wash, and the crossfade timing between scenes. |
-| `components/nav/GlassSurface.tsx` | The optical parameters of the nav's glass — refraction, frost, chromatic aberration, tint. |
+| `lib/glassMaterial.ts` | The optical parameters of every glass surface — refraction, frost, chromatic aberration, specular, tint. The rim, sheen and bloom that go on top of them are the `--lg3-*` tokens in `app/globals.css`. |
 
 > **Before launch:** `content/site.ts` marks several items `PLACEHOLDER`. Every
 > testimonial, the client names, the "ninety days minimum" commitment, and the
@@ -70,10 +70,15 @@ a time and the balloon settles into the clouds. The pin is dropped below 768px.
   sway and lagging tilt run continuously in `useFrame`, so it is alive on a
   still page; the flight path is chased with a lerp so it lags the scrollbar and
   reads as carried rather than dragged. No React state is involved in either.
-- **liquid-glass-js** is the nav's scrolled surface, and nothing else. It
-  refracts a *clone* of the backdrop — which is why every scene opacity is a CSS
-  custom property on `:root` rather than an inline style: the clone inherits
-  those variables and so crossfades along with the original for free.
+- **liquid-glass-js** is the refraction under three surfaces: the scrolled nav,
+  the contact card, and whichever testimonial is open. It refracts a *clone* of
+  the backdrop — which is why every scene opacity is a CSS custom property on
+  `:root` rather than an inline style: the clone inherits those variables and so
+  crossfades along with the original for free. It is also why `Stage.tsx` will
+  not write one of those variables twice with the same value; each write re-runs
+  a full-viewport SVG filter over five cloned paintings, once per live lens.
+  Everything you actually *see* at the edge of a glass surface — the rim, the
+  sheen, the bloom — is CSS on the real element, not the library.
 - **@shadergradient/react** is the animated glow behind the testimonials only.
   It bundles its own copy of three.js, so it is loaded through `next/dynamic`
   with `ssr: false` and its own lazy-load observer, and blended into the painted

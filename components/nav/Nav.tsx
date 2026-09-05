@@ -12,6 +12,21 @@ import styles from "./Nav.module.css";
 const SCROLL_THRESHOLD = 80;
 
 /**
+ * How much of the screen the footer has to take before the bar leaves.
+ *
+ * The footer repeats the wordmark at full width and lists the same four
+ * sections the bar does, so once you are in it the bar is pure duplication
+ * laid across the top of the night sky. It leaves rather than competing.
+ *
+ * Read this as "shrink the root to its top 40%": the footer counts as arrived
+ * only once it covers the bottom 60% of the screen, not the moment its top edge
+ * appears. Cutting the top of the root instead — which is the intuitive way to
+ * write it and the wrong one — fires while the contact form is still the thing
+ * being looked at.
+ */
+const FOOTER_MARGIN = "0px 0px -60% 0px";
+
+/**
  * Which ink each scene needs. The cloud sea and the light rays are bright
  * enough that cream type disappears into them; the other three are not.
  * Checked against the actual paintings, not guessed from their names.
@@ -32,6 +47,7 @@ export type NavProps = {
 export function Nav({ scene }: NavProps) {
   const navRef = useRef<HTMLElement>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [atFooter, setAtFooter] = useState(false);
   const [glassMode, setGlassMode] = useState<"glass" | "css">("css");
 
   useEffect(() => {
@@ -41,14 +57,34 @@ export function Nav({ scene }: NavProps) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  /* Stand down over the footer. An observer rather than a scroll threshold
+     because the footer's own height is the thing that matters, and that changes
+     with the viewport and with how the three columns stack. */
+  useEffect(() => {
+    const footer = document.getElementById("footer");
+    if (!footer) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setAtFooter(entry.isIntersecting),
+      { rootMargin: FOOTER_MARGIN }
+    );
+    observer.observe(footer);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <>
       <header
         ref={navRef}
         className={styles.nav}
         data-scrolled={scrolled}
+        data-hidden={atFooter}
         data-ink={SCENE_INK[scene]}
         data-glass={glassMode}
+        /* Not merely invisible: a bar that has translated off the top of the
+           screen must not still be the next tab stop. Nothing is lost — the
+           footer underneath carries the same four links. */
+        inert={atFooter}
       >
         <div className={styles.inner}>
           <a className={styles.wordmark} href="#home">
@@ -87,7 +123,7 @@ export function Nav({ scene }: NavProps) {
       {/* Renders nothing itself — it drives liquid-glass-js, whose elements
           live on <body> and are positioned to match the bar above. */}
       <GlassSurface
-        active={scrolled}
+        active={scrolled && !atFooter}
         targetRef={navRef}
         backgroundSelector="#stage-backdrop"
         onModeChange={setGlassMode}

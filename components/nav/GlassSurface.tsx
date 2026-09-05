@@ -4,35 +4,44 @@ import { useEffect, useRef, useState } from "react";
 
 import type { LiquidGlass as LiquidGlassClass } from "liquid-glass-js";
 
+import { GLASS_BAR } from "@/lib/glassMaterial";
 import { glassElements } from "@/lib/liquidGlassElements";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 
-/* ── Tuning ─────────────────────────────────────────────────────────────────
-   The optical parameters of the nav's glass. These are liquid-glass-js's own
-   knobs; the library models a real height field and refracts what is behind it,
-   so `scale` is genuine displacement in pixels rather than a blur radius.
-
-   The bar is full-bleed, so its left and right bezels are off screen — what you
-   actually see is the bottom lip, where the scene passing underneath is
-   magnified and split into colour. `depth` controls how far up from that edge
-   the curve reaches. */
+/* The bar's own geometry. Every optical value comes from the shared material
+   in lib/glassMaterial.ts — the nav used to keep a private copy of the numbers,
+   which is why retuning the glass elsewhere never changed the bar. */
 const GLASS = {
+  ...GLASS_BAR,
   radius: 0, // full-bleed strip: no corners to round
-  scale: 26, // refraction strength (max edge displacement, px)
-  depth: 22, // how far the curved bezel reaches in from the edge
-  curvature: 2.6, // ~2 spherical, ~4 squircle
-  convexity: 1, // convex, so the edge magnifies
-  chroma: 0.06, // a whisper of chromatic aberration; more looks like a bug
-  blur: 14, // the frost
-  glow: 0.06,
-  edge: 0.42, // specular highlight strength
-  specAngle: 118,
-  tint: 0.16,
-  tintColor: "#1d4a4c", // --c-deep-teal
 };
 
 /** Below this width the clone-and-refract cost is not worth it — CSS instead. */
 const GLASS_MIN_WIDTH = 900;
+
+/**
+ * The bar's box, measured so that a transform on it is ignored.
+ *
+ * getBoundingClientRect() would be the obvious call and is the wrong one here.
+ * The bar translates off the top of the screen over the footer, and a rect taken
+ * during that — the resize this schedules can easily land inside the bar's own
+ * 360ms transition — reports a negative top and drags the glass up with it. It
+ * then stays there, because nothing re-measures until the next state change: the
+ * bar comes back on the way up and its glass does not, leaving the wordmark and
+ * the links sitting unbacked on whatever section is scrolling underneath.
+ *
+ * offsetTop / offsetLeft / offsetWidth / offsetHeight are layout, not painting,
+ * so they are untouched by the transform. The bar is fixed at the top of the
+ * viewport, so its layout box is the whole answer.
+ */
+function barBox(nav: HTMLElement) {
+  return {
+    left: nav.offsetLeft,
+    top: nav.offsetTop,
+    width: Math.ceil(nav.offsetWidth),
+    height: Math.ceil(nav.offsetHeight),
+  };
+}
 
 export type GlassSurfaceProps = {
   /** Whether the glass should be showing at all. */
@@ -108,9 +117,9 @@ export function GlassSurface({
     const sync = () => {
       const nav = targetRef.current;
       if (!glass || !nav) return;
-      const rect = nav.getBoundingClientRect();
-      glass.set({ width: Math.ceil(rect.width), height: Math.ceil(rect.height) });
-      glass.moveTo(rect.left, rect.top);
+      const box = barBox(nav);
+      glass.set({ width: box.width, height: box.height });
+      glass.moveTo(box.left, box.top);
     };
 
     void (async () => {
@@ -123,14 +132,14 @@ export function GlassSurface({
         const nav = targetRef.current;
         if (!background || !nav) throw new Error("glass target missing");
 
-        const rect = nav.getBoundingClientRect();
+        const box = barBox(nav);
         glass = new LiquidGlass({
           ...GLASS,
           background,
-          width: Math.ceil(rect.width),
-          height: Math.ceil(rect.height),
-          x: rect.left,
-          y: rect.top,
+          width: box.width,
+          height: box.height,
+          x: box.left,
+          y: box.top,
           zIndex: 40, // matches --z-glass; the pane itself lands at 41
           draggable: false, // it is a nav bar, not a toy
         });
@@ -185,9 +194,9 @@ export function GlassSurface({
     if (!nav) return;
     /* Wait out the nav's own height transition before matching it. */
     const timer = window.setTimeout(() => {
-      const rect = nav.getBoundingClientRect();
-      glass.set({ width: Math.ceil(rect.width), height: Math.ceil(rect.height) });
-      glass.moveTo(rect.left, rect.top);
+      const box = barBox(nav);
+      glass.set({ width: box.width, height: box.height });
+      glass.moveTo(box.left, box.top);
     }, 380);
     return () => window.clearTimeout(timer);
   }, [active, ready, targetRef]);

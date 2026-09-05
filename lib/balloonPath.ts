@@ -96,9 +96,18 @@ export const IDLE = {
 /**
  * How hard the balloon chases its scroll target each frame, 0–1.
  * Lower = floatier and laggier. Higher = locked to the scrollbar.
- * 0.075 reads as "carried by the air" without feeling broken.
+ *
+ * This is now the SECOND filter in a chain, not the only one: scrollProgress
+ * .section is itself eased toward the scrollbar (SCROLL_DAMPING in Stage.tsx),
+ * so the balloon lags a target that is already lagging. Two first-order filters
+ * in series add their time constants, so keeping the balloon's total lag where
+ * it was tuned means this one has to tighten by exactly what the damping added:
+ * 1/0.075 ≈ 13.3 frames before, and 1/0.12 + 1/0.2 ≈ 13.3 frames now. The feel
+ * is fractionally softer at the start of a move, which is the point, and no
+ * laggier overall, which is not something to change by accident. Retune the
+ * damping and this has to move with it.
  */
-export const FOLLOW_LERP = 0.075;
+export const FOLLOW_LERP = 0.2;
 
 /**
  * Narrow screens get a different balloon.

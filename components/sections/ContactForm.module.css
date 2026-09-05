@@ -5,36 +5,61 @@
    paintings; a form is something you type into, and typing into a landscape is
    miserable.
 
-   The surface itself is a liquid-glass-js lens sitting behind this card — see
-   SectionGlass.tsx, aimed at .formCell in Testimonials.module.css. So the card
-   is not the glass: it is the translucent wash and the type on top of it, and
-   it has to stay light enough to let the refraction through and opaque enough
-   to carry --ink-dark at 4.5:1 over a painting that is bright in the middle.
-   That is the whole tension in these two rules.
+   The refraction is a liquid-glass-js lens sitting behind this card — see
+   SectionGlass.tsx, aimed at .formCell in Testimonials.module.css. The rim,
+   sheen and bloom are the --lg3-* tokens in globals.css, drawn here on the card
+   itself. What is left for this file to decide is the one number the rest of it
+   is a fight over: --card-wash.
    ========================================================================== */
 
 .card {
+  /* THE contrast knob, and the one number the rest of this file is a fight
+     over. lg3 is nearly clear, and clear is what the refraction wants — but
+     this card carries --ink-dark over a painting, and its copy has to hold
+     4.5:1 against whatever part of that painting is behind it.
+
+     Measured against the rendered page, not guessed, by the procedure in
+     CLAUDE.md: hide the card's text, screenshot, average the surface row by row
+     under each line of type (a line sits on one band of the surface, not on the
+     average of the whole card), and compute. Taking the darkest row in each
+     case, at 0.34:
+
+       rays settled, card low     10.99:1 ink · 5.96:1 dim · 7.51:1 label
+       rays settled, card high    10.70:1 ink · 5.86:1 dim · 7.31:1 label
+       sky 61% turned to night     8.96:1 ink · 5.22:1 dim · 6.12:1 label
+
+     That last row is the real floor and the one that is easy to miss: the sky
+     is already most of the way to the night painting while the card's last line
+     is still on screen. It is the case that decides this number.
+
+     Re-run all three after any change to this value, to the testimonials' wash
+     in scenes.ts, or to the tint in lib/glassMaterial.ts. */
+  --card-wash: rgb(var(--rgb-cream) / 0.34);
+
   position: relative;
   display: grid;
   gap: var(--sp-4);
   padding: clamp(var(--sp-5), 3vw, var(--sp-7));
   border-radius: var(--r-md);
-  border: var(--hairline) solid rgb(255 255 255 / 0.34);
-  background: rgb(var(--rgb-cream) / 0.62);
-  box-shadow: 0 1px 0 0 rgb(255 255 255 / 0.6) inset;
+  /* Transparent, so the conic rim clipped to border-box is not covered. See
+     the note on the --lg3-* tokens in globals.css. */
+  border: var(--hairline) solid transparent;
+  background:
+    linear-gradient(var(--card-wash), var(--card-wash)) padding-box,
+    var(--lg3-sheen) padding-box,
+    var(--lg3-rim) border-box;
+  box-shadow: var(--lg3-inner), var(--lg3-bloom);
   color: var(--ink-dark);
 }
 
-/* No lens: narrow screens, reduced motion, or a failed import. The card goes
-   back to carrying its own surface, frosted in CSS. */
+/* No lens: narrow screens, reduced motion, or a failed import. The card keeps
+   the same rim, sheen and bloom — only the refraction is missing — and frosts
+   in CSS, leaning on a heavier wash to make up the legibility the lens was
+   contributing. */
 :global([data-glass="css"]) .card {
-  border-color: rgb(var(--rgb-earth) / 0.14);
-  background: rgb(var(--rgb-cream) / 0.9);
+  --card-wash: rgb(var(--rgb-cream) / 0.86);
   backdrop-filter: blur(18px) saturate(1.35);
   -webkit-backdrop-filter: blur(18px) saturate(1.35);
-  box-shadow:
-    0 1px 0 0 rgb(255 255 255 / 0.7) inset,
-    0 30px 70px -40px rgb(var(--rgb-earth) / 0.7);
 }
 
 .eyebrow {
@@ -43,6 +68,7 @@
   letter-spacing: var(--ls-micro);
   text-transform: uppercase;
   color: var(--c-deep-teal);
+  text-shadow: var(--glow-on-light);
 }
 
 .heading {
@@ -51,6 +77,11 @@
   font-weight: 400;
   line-height: var(--lh-heading);
   letter-spacing: var(--ls-heading);
+  /* lg3's glowing type, inverted for dark ink: the halo is pushed out behind
+     the letters rather than around them. On the brightest part of the rays it
+     is invisible; where the card sits over a darker patch it is what keeps the
+     heading from going soft. */
+  text-shadow: var(--glow-on-light);
 }
 
 .fields {

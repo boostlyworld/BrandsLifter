@@ -101,6 +101,80 @@
   --r-pill: 999px;
   --hairline: 1px;
 
+  /* ── The glass ────────────────────────────────────────────────────────────
+     liquid-glass-js supplies the refraction — genuine optical displacement of
+     the painting behind a surface, which CSS cannot do. It cannot supply the
+     rest of what makes public/lg3.jpg read as glass, because it draws its own
+     elements on <body> and can only give them one uniform box-shadow. The rim
+     and the bloom are these tokens instead, applied to the real elements, where
+     they follow the content and take its radius.
+
+     Every glass surface on the site stacks the same layers:
+
+       border: var(--hairline) solid transparent;      · room for the rim
+       background:
+         <its own legibility wash> padding-box,
+         var(--lg3-sheen)          padding-box,
+         var(--lg3-rim)            border-box;
+       box-shadow: var(--lg3-inner), var(--lg3-bloom);
+
+     The border has to be transparent. The rim is painted as a background
+     clipped to border-box, and a border with a colour of its own sits on top of
+     it and hides it — which also means the hover and open states of these
+     surfaces cannot be a border-color change any more. They are rings added to
+     the box-shadow instead. */
+
+  /* The sheen across the face — the light the surface itself carries, before
+     anything behind it has been refracted. */
+  --lg3-sheen: linear-gradient(
+    160deg,
+    rgb(255 255 255 / 0.14) 0%,
+    rgb(255 255 255 / 0.03) 46%,
+    rgb(255 255 255 / 0.1) 100%
+  );
+
+  /* The rim, and the reason it is a conic gradient rather than a border colour:
+     a real bezel catches the light on two opposite arcs and falls into shadow
+     on the other two, and one flat colour cannot do that. The dark arcs are not
+     decoration either — they are what keeps the rim visible over the cloud sea
+     and the light rays, where a white hairline disappears into the painting.
+     Starting at 205deg puts the bright pair top-left and bottom-right, agreeing
+     with the specular angle in lib/glassMaterial.ts. Rotate one and rotate the
+     other, or the highlight and the rim disagree about where the light is. */
+  --lg3-rim: conic-gradient(
+    from 205deg,
+    rgb(255 255 255 / 0.95) 0%,
+    rgb(var(--rgb-earth) / 0.22) 20%,
+    rgb(255 255 255 / 0.6) 48%,
+    rgb(var(--rgb-earth) / 0.18) 72%,
+    rgb(255 255 255 / 0.95) 100%
+  );
+
+  /* Thickness: a bright top lip, and a gather of light just inside the rim. */
+  --lg3-inner:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.55),
+    inset 0 0 24px -8px rgb(255 255 255 / 0.4);
+
+  /* What the surface throws: a close bloom, and one soft cast beneath it. */
+  --lg3-bloom:
+    0 0 36px -12px rgb(255 255 255 / 0.32),
+    0 22px 48px -30px rgb(var(--rgb-night) / 0.55);
+
+  /* ── Type glow ────────────────────────────────────────────────────────────
+     lg3's other half: the type glows as well as the glass. Over the three dark
+     paintings that is a literal bloom around cream letters. Over the cloud sea
+     and the light rays a white bloom would be invisible, so the same idea
+     inverts into a light halo pushed out behind dark ink — which is also what
+     those two scenes need for legibility, so this is one mechanism doing both
+     jobs rather than an effect fighting a requirement. */
+  --glow-on-dark:
+    0 0 1px rgb(255 255 255 / 0.35),
+    0 0 14px rgb(var(--rgb-cream) / 0.45),
+    0 1px 10px rgb(var(--rgb-earth) / 0.6);
+  --glow-on-light:
+    0 0 12px rgb(255 255 255 / 0.9),
+    0 1px 2px rgb(255 255 255 / 0.85);
+
   /* ── Motion ───────────────────────────────────────────────────────────── */
   --dur-fast: 180ms;      /* hovers                                      */
   --dur-nav: 360ms;       /* nav collapse on scroll (brief asks 300–400) */
@@ -298,26 +372,22 @@ button, input, textarea, select {
 /* ============================================================================
    liquid-glass-js overrides
    ----------------------------------------------------------------------------
-   The library appends its own .lqg-lens / .lqg-glass elements to <body> and
-   ships a heavy drop shadow meant for a small floating draggable panel. The nav
-   is a full-width strip, so its shadow is replaced with a bright hairline along
-   the bottom edge and one soft cast beneath it. The testimonials' panes are
-   small floating surfaces after all, so they opt out by class name.
+   The library appends its own .lqg-lens / .lqg-glass elements to <body>. The
+   lens carries the refracted clone of the backdrop and needs nothing from us;
+   the pane on top of it adds frost and tint, which is exactly what this site
+   wants from it — and also ships a heavy drop shadow meant for a small floating
+   draggable panel, plus two inner hairlines of its own.
+
+   All of that is stripped here. Every surface draws its own rim, sheen and
+   bloom on the REAL element (the --lg3-* tokens above), where they follow the
+   content, take its border radius, and are hidden and shown along with it. A
+   second set of edges drawn in screen coordinates on an element behind the
+   surface, half a frame out of date while the page scrolls, only ever reads as
+   a double line around it.
    ========================================================================== */
 
-.lqg-glass:not(.lqg-section) {
-  box-shadow:
-    0 1px 0 0 rgb(var(--rgb-cream) / 0.16),
-    0 18px 40px -28px rgb(var(--rgb-night) / 0.55) !important;
-}
-
-/* The testimonials' panes are small floating surfaces rather than a full-bleed
-   strip, so they keep a shadow — just a softer one than the library's, seated
-   in the section's own earth tone. SectionGlass.tsx adds the class. */
-.lqg-glass.lqg-section {
-  box-shadow:
-    inset 0 1px 0 0 rgb(255 255 255 / 0.4),
-    0 30px 70px -40px rgb(var(--rgb-earth) / 0.75) !important;
+.lqg-glass {
+  box-shadow: none !important;
 }
 
 /* ============================================================================
