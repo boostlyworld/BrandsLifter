@@ -180,6 +180,7 @@
   --dur-nav: 360ms;       /* nav collapse on scroll (brief asks 300–400) */
   --dur-reveal: 720ms;    /* section content fading in                   */
   --dur-expand: 460ms;    /* a testimonial opening (see EXPAND_MS in TSX) */
+  --dur-stack: 340ms;     /* … and the same on the mobile card stack     */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 

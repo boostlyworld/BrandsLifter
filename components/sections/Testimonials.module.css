@@ -100,6 +100,19 @@
   --open-cap: clamp(13rem, 20vw, 17.5rem);
 }
 
+/* The two lists are wrapped in a rail so the stack below 1025px has a single
+   scroll container to put its snap points in. In the orbit that wrapper has to
+   disappear completely, which `display: contents` does — and on a <div> it costs
+   nothing, unlike on the <ul>s, where it is still known to drop list semantics
+   in some screen readers.
+
+   With the wrapper gone the grid sees three children again, but now in the order
+   ul, ul, formCell rather than ul, formCell, ul — so the columns below are
+   stated rather than left to auto-placement. */
+.rail {
+  display: contents;
+}
+
 .side {
   display: grid;
   /* Generous, because the slots are now small and an open circle is not: this
@@ -110,11 +123,21 @@
 
 /* Right-hand pair is nudged the other way so the two sides are not mirrors. */
 .sideRight {
+  grid-column: 3;
+  grid-row: 1;
   padding-top: clamp(var(--sp-6), 8vh, var(--sp-10));
 }
 
 .sideLeft {
+  grid-column: 1;
+  grid-row: 1;
   padding-bottom: clamp(var(--sp-6), 8vh, var(--sp-10));
+}
+
+/* Where you are along the row. The stack's affordance, and nothing the orbit
+   has any use for. */
+.dots {
+  display: none;
 }
 
 /* The middle of the orbit, and what the card's lens is aimed at. It carries no
@@ -122,6 +145,8 @@
    is the stable box the lens measures, and the #contact anchor target. */
 .formCell {
   position: relative;
+  grid-column: 2;
+  grid-row: 1;
 }
 
 /* ── A testimonial ────────────────────────────────────────────────────────
@@ -339,81 +364,343 @@
   object-fit: cover;
 }
 
-/* ── Narrow screens ───────────────────────────────────────────────────────
-   Circles stop being circles below the breakpoint. A ring wide enough to hold
-   a sentence would run off a phone screen, and an expand-on-hover interaction
-   has nothing to expand from on a touch device with no room for the result. */
+/* ── The stack ────────────────────────────────────────────────────────────
+   Below 1025px the orbit becomes one horizontal row of cards: swipe sideways,
+   tap to open. A ring wide enough to hold a sentence does not fit on a phone,
+   and hovering is not a gesture a touch screen has.
+
+   The mechanism is the orbit's and only the geometry changes. The slot is still
+   a fixed box and the surface inside it is still absolutely positioned, so
+   opening one still moves nothing else: it grows downward into headroom the rail
+   reserves, the row's height never changes, and the contact form never shifts
+   under the thumb that just tapped. That also keeps the section's measured
+   height equal to what ScrollTrigger last read — the sky's crossfade schedule is
+   keyed to it (components/stage/scenes.ts), and a section that silently grew
+   mid-scroll would drag the handover along with it.
+
+   The glass here is always the CSS one. liquid-glass-js is gated at 900px
+   (SectionGlass.tsx), so no phone ever gets refraction — but the band from 900
+   to 1024 does, which is why the material below is stated outright rather than
+   hung off [data-glass="css"]: the card should be the same card at 1000px as at
+   375px, and the only thing it can honestly be at 375px is the fallback. */
 @media (max-width: 1024px) {
   .orbit {
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--sp-7);
+    gap: var(--sp-6);
+
+    /* One card. Wide enough for two lines of the quote without hyphenating,
+       narrow enough that the neighbours on both sides stay in frame — the peek
+       is the whole affordance.
+
+       The cap is also what decides how many of the reviews actually truncate at
+       tablet widths, where 78vw stops binding: at 22rem the two shortest quotes
+       fit their preview entirely and open to no visible change. 21rem buys one
+       of those back. The other sits within a few pixels of the two-line boundary
+       at every width worth having, so this is tuned against the placeholder copy
+       in content/site.ts and should be re-checked when real reviews land. A card
+       whose review fits the preview is not broken — it simply shows in full, and
+       its disclosure still has the two states it claims. */
+    --stack-card-w: min(78vw, 21rem);
+    --stack-pad: var(--sp-4);
+    /* 44px. The avatar is the smallest thing on the card, and since the tap
+       target is the whole card this is a floor that is never the target. */
+    --stack-avatar: 2.75rem;
+    --stack-quote-fs: 0.95rem;
+    --stack-quote-lh: 1.45;
+    --stack-clamp: 2;
+
+    /* Built from the parts rather than eyeballed, so changing the padding or
+       the type size moves the card with it: two lines of quote, a row for the
+       face and the name, and the padding around both. */
+    --stack-card-h: calc(
+      var(--stack-pad) * 2 + var(--stack-avatar) + var(--sp-3) + 2 *
+        var(--stack-quote-fs) * var(--stack-quote-lh)
+    );
+    /* Room for an open card to grow into. The longest quote runs to four lines
+       at this width, so two more lines and a little air. */
+    --stack-grow: 5rem;
   }
 
-  .side {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--sp-5);
-    justify-items: center;
+  .rail {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-4);
+    overflow-x: auto;
+    /* Settle on a card rather than between two. */
+    scroll-snap-type: x mandatory;
+    /* A sideways fling stops at the end of the row instead of carrying on into
+       the page or into the browser's own back-swipe. */
+    overscroll-behavior-x: contain;
+
+    /* Note what is NOT here: touch-action. `pan-x` would take vertical scrolling
+       away from every gesture that starts on the row, which is the one thing
+       this must not do. Left alone, the browser picks the axis from the
+       direction of the swipe — the wanted behaviour in both directions. */
+
+    /* Half a viewport short of a card, so the first and the last can still
+       reach the middle under scroll-snap-align: center. */
+    padding-inline: max(var(--gutter), calc((100% - var(--stack-card-w)) / 2));
+    /* The headroom an open card grows into, taken back out of the flow: an open
+       card should paint over the dots and the gap beneath them, not push them
+       down by 5rem while all four are shut. */
+    padding-bottom: var(--stack-grow);
+    margin-bottom: calc(var(--stack-grow) * -1);
+
+    /* Full bleed, so the peek runs to the edge of the screen. This lands exactly
+       on the section's own box, so .testimonials { overflow: hidden } has
+       nothing to clip. */
+    margin-inline: calc(var(--gutter) * -1);
+
+    scrollbar-width: none;
   }
 
-  .sideLeft,
-  .sideRight {
-    padding: 0;
-  }
-
-  /* No reordering: stacked, the DOM order gives two testimonials, then the
-     form, then two more. A cold visitor should be given a reason before being
-     asked, and the form still sits in the middle of its proof. */
-}
-
-/* Below this the reviews are simply shown — no avatars to open, no expansion,
-   because there is no room for a circle to expand into. The layout goes back to
-   plain quotes with a left rule, which is honest about the constraint rather
-   than squeezing. */
-@media (max-width: 640px) {
-  .side {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--sp-5);
-  }
-
-  .slot {
-    width: 100%;
-    height: auto;
-  }
-
-  .glassBox,
-  .trigger {
+  .rail::-webkit-scrollbar {
     display: none;
   }
 
+  /* Two lists, one row. The gaps have to match, or the seam between them would
+     read as a wider space than the one inside each. */
+  .side {
+    display: flex;
+    gap: var(--sp-4);
+    padding: 0;
+  }
+
+  .sideLeft,
+  .sideRight,
+  .formCell {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .slot {
+    flex: 0 0 var(--stack-card-w);
+    width: var(--stack-card-w);
+    height: var(--stack-card-h);
+    scroll-snap-align: center;
+    transition:
+      scale var(--dur-stack) var(--ease-out),
+      opacity var(--dur-stack) var(--ease-out);
+  }
+
+  /* An open card takes the room; the ones either side of it step back, so the
+     eye has somewhere to be. */
+  .rail:has(.slot[data-open="true"]) .slot:not([data-open="true"]) {
+    scale: 0.94;
+    opacity: 0.55;
+  }
+
+  /* Nothing to aim a lens at down here. */
+  .glassBox {
+    display: none;
+  }
+
+  /* The card. Anchored to the top of its slot and free at the bottom, which is
+     the direction it grows. Its open height is handed to it in pixels by
+     Testimonials.tsx — `height: auto` does not transition, and one max-height
+     big enough for the longest quote would leave every shorter card finishing
+     its ease early and then jumping the rest of the way. */
   .circle {
-    position: static;
+    top: 0;
+    left: 0;
+    right: 0;
     translate: none;
-    width: 100%;
-    height: auto;
-    opacity: 1;
-    pointer-events: auto;
-    aspect-ratio: auto;
+    width: auto;
+    height: var(--stack-card-h);
+    display: grid;
+    align-content: start;
+    justify-items: stretch;
+    gap: var(--sp-3);
+    padding: var(--stack-pad);
     border-radius: var(--r-md);
-    padding: var(--sp-5);
     text-align: left;
-    justify-items: start;
-    /* No ring at this width: these are quote cards with a rule, not circles, so
-       the conic rim and its transparent border are unwound rather than
-       stretched around a rectangle nothing refracts. */
-    border: 0;
-    border-left: 2px solid rgb(var(--rgb-deep-teal) / 0.5);
-    background: rgb(255 255 255 / 0.2);
-    box-shadow: none;
+    opacity: 1;
+    /* The tap target is the button stretched over the whole card, so the surface
+       itself never takes a pointer — including the part of an open card that
+       hangs below its slot, where a tap means close and is read as a tap
+       outside. */
+    pointer-events: none;
+    overflow: hidden;
+    /* Height, and it has to be height. The usual answer to animating a box open
+       is grid-template-rows 0fr → 1fr, but that runs from nothing, and this runs
+       from a two-line preview to the whole review — an fr pair cannot say that
+       without the preview and the remainder being two separate boxes, which
+       would mean the quote in the DOM twice. max-height is worse: one value big
+       enough for the longest review leaves every shorter card easing out early
+       and then jumping.
+
+       The usual objection does not apply either. What this dirties is one
+       absolutely-positioned card inside a scroll container whose own height is
+       fixed — measured identical open and closed at 375, 390, 430, 768 and 1000
+       — so nothing outside the card relays, and it runs once per tap.
+       impeccable-disable-next-line layout-transition -- see above */
+    transition: height var(--dur-stack) var(--ease-out);
   }
 
-  .quote,
+  /* The same material as the contact card and the nav bar: a wash, the sheen,
+     the inner lip, the bloom and the conic rim. Stated rather than inherited
+     from [data-glass="css"] — see the note above.
+
+     The rim is the one part that cannot be built the usual way here. Everywhere
+     else on the site it is a background layer clipped to border-box, and it
+     reads as a rim only because the padding-box layers on top of it are opaque
+     enough to hide its middle. That works on an 88px disc and on the contact
+     card, which is tall enough that the gradient's centre is nowhere near the
+     type. On a card 304 wide and 132 high the centre lands behind the quote and
+     the conic opens out into a four-armed burst that reads as a lens flare. It
+     survives a 0.86 wash — the arms still swing 30 values of luminance — and the
+     only wash that hides it is an opaque one, which is no longer glass.
+
+     So the rim is drawn where it belongs instead: on a pseudo-element masked to
+     its own border, in ::before below. Same token, same colour, one pixel wide.
+     That also buys back the wash, which can stay sheer enough to see the
+     painting through. */
+  .circle,
+  .testimonials[data-glass="css"] .circle {
+    border: 0;
+    background:
+      linear-gradient(
+          rgb(var(--rgb-cream) / 0.58),
+          rgb(var(--rgb-cream) / 0.58)
+        )
+        padding-box,
+      var(--lg3-sheen) padding-box;
+    box-shadow: var(--lg3-inner), var(--lg3-bloom);
+    backdrop-filter: blur(18px) saturate(1.35);
+    -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  }
+
+  /* The rim, and only the rim: the conic painted over the whole box, then masked
+     down to the ring between the border edge and the padding edge. The two masks
+     are the box and its inside; excluding one from the other leaves the frame.
+
+     Absolutely positioned so that it is not a grid item of the card, and out of
+     the way of pointers so it cannot take a tap from the button over it. */
+  .circle::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    padding: var(--hairline);
+    border-radius: inherit;
+    background: var(--lg3-rim);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* The open state has to restate the collapsed height. The orbit's own rule
+     sets `height: var(--open)` — a diameter, in rem — and it is the same
+     specificity, so leaving it alone would hand the card a circle's height. This
+     is also where the height transition starts from, before Testimonials.tsx
+     puts the measured value on top of it. */
+  .slot[data-open="true"] .circle {
+    width: auto;
+    height: var(--stack-card-h);
+    pointer-events: none;
+  }
+
+  /* The name sits beside the face, so it leads the card and the quote follows
+     it. The DOM keeps the blockquote first — right for a <figure>, and right for
+     a screen reader, which should reach the review before its attribution. */
   .attribution {
+    order: -1;
+    min-height: var(--stack-avatar);
+    padding-left: calc(var(--stack-avatar) + var(--sp-3));
+    display: grid;
+    align-content: center;
+    text-align: left;
     opacity: 1;
   }
 
+  /* Truncated by sight only. The full review is in the DOM at every moment, so
+     it is there to be read aloud whether the card is open or not. */
   .quote {
-    font-size: clamp(0.92rem, 0.8rem + 0.35vw, 1.12rem);
+    font-size: var(--stack-quote-fs);
+    line-height: var(--stack-quote-lh);
+    text-align: left;
     text-wrap: pretty;
+    opacity: 1;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--stack-clamp);
+    overflow: hidden;
+  }
+
+  .slot[data-open="true"] .quote {
+    -webkit-line-clamp: unset;
+  }
+
+  /* Nothing here fades in — the review is on the card the whole time. */
+  .quote,
+  .attribution,
+  .slot[data-open="true"] .quote,
+  .slot[data-open="true"] .attribution {
+    transition: none;
+    transition-delay: 0s;
+  }
+
+  /* The whole card is the button. Everything on it is text or a portrait, so
+     nothing is lost by covering it, and the target is the full card rather than
+     a 44px disc. */
+  .trigger {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    height: auto;
+    translate: none;
+    /* The orbit's button is a disc. Left at 50% the focus ring is drawn as an
+       ellipse across the whole card — which is not only wrong but clips at the
+       corners, so the one indicator a keyboard user has is the least legible
+       thing on the card. It takes the card's radius here. */
+    border-radius: var(--r-md);
+    z-index: 1;
+  }
+
+  .slot[data-open="true"] .trigger {
+    translate: none;
+  }
+
+  /* The avatar keeps its place at the top left of the card whatever the card is
+     doing — down here it is a label, not the control. */
+  .disc {
+    position: absolute;
+    top: var(--stack-pad);
+    left: var(--stack-pad);
+    width: var(--stack-avatar);
+    height: var(--stack-avatar);
+    font-size: 0.9rem;
+  }
+
+  .slot[data-open="true"] .disc {
+    scale: none;
+  }
+
+  .dots {
+    display: flex;
+    justify-content: center;
+    gap: var(--sp-2);
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgb(var(--rgb-deep-teal) / 0.24);
+    transition:
+      background var(--dur-stack) var(--ease-out),
+      scale var(--dur-stack) var(--ease-out);
+  }
+
+  .dot[data-on="true"] {
+    background: rgb(var(--rgb-deep-teal) / 0.8);
+    scale: 1.25;
   }
 }
 
@@ -428,11 +715,17 @@
 /* Reduced motion gets the same disclosure without the travel: the circle and
    the avatar snap between the two states (the blanket rule in globals.css cuts
    every transition to 0.01ms) and only the review itself fades, which is not a
-   motion problem. */
-@media (prefers-reduced-motion: reduce) {
+   motion problem.
+
+   Scoped above the stack's breakpoint, because down there the review does not
+   fade at all — it is on the card the whole time, and only the card's height
+   moves. The blanket rule cutting that to nothing is exactly the wanted
+   fallback: the card simply is open. */
+@media (prefers-reduced-motion: reduce) and (min-width: 1025px) {
   .quote,
   .attribution {
     transition: opacity var(--dur-reveal) var(--ease-out) !important;
     transition-delay: 0s !important;
   }
 }
+
